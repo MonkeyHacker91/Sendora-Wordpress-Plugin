@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/test-phone.php';
 require_once __DIR__ . '/test-api-client.php';
+require_once __DIR__ . '/test-settings.php';
 
-final class AllTests extends SendoraApiClientTest
+final class AllTests extends SendoraSettingsTest
 {
 }

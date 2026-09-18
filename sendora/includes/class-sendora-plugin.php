@@ -17,9 +17,7 @@ final class Sendora_Plugin
 
     public function run(): void
     {
-        /**
-         * Future plugin modules register their WordPress hooks here.
-         */
+        (new Sendora_Settings())->run();
     }
 
     private function __construct()

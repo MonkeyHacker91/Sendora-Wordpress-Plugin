@@ -18,8 +18,10 @@ final class Sendora_Api_Client
 
     public static function from_options(): self
     {
-        $base_url = (string) get_option('sendora_api_base_url', self::DEFAULT_BASE_URL);
-        $api_key = (string) get_option('sendora_api_key', '');
+        $settings = get_option('sendora_settings', []);
+        $settings = is_array($settings) ? $settings : [];
+        $base_url = (string) ($settings['api_base'] ?? self::DEFAULT_BASE_URL);
+        $api_key = (string) ($settings['api_key'] ?? '');
 
         return new self(rtrim($base_url, '/'), trim($api_key));
     }

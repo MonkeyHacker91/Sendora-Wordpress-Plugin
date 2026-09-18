@@ -21,6 +21,7 @@ define('SENDORA_PLUGIN_DIR', plugin_dir_path(__FILE__));
 
 require_once SENDORA_PLUGIN_DIR . 'includes/class-sendora-phone.php';
 require_once SENDORA_PLUGIN_DIR . 'includes/class-sendora-api-client.php';
+require_once SENDORA_PLUGIN_DIR . 'includes/class-sendora-settings.php';
 require_once SENDORA_PLUGIN_DIR . 'includes/class-sendora-plugin.php';
 
 add_action('plugins_loaded', static function (): void {

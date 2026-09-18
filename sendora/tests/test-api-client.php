@@ -7,8 +7,10 @@ abstract class SendoraApiClientTest extends SendoraPhoneTest
     protected function setUp(): void
     {
         $GLOBALS['sendora_test_options'] = [
-            'sendora_api_base_url' => 'https://api.sendora.com.br',
-            'sendora_api_key' => 'sk_test_key',
+            'sendora_settings' => [
+                'api_base' => 'https://api.sendora.com.br',
+                'api_key' => 'sk_test_key',
+            ],
         ];
         $GLOBALS['sendora_test_http_handler'] = null;
     }

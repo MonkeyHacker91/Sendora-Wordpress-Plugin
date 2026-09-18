@@ -1,0 +1,35 @@
+.sendora-settings {
+    max-width: 960px;
+}
+
+.sendora-card {
+    margin-top: 20px;
+    padding: 20px 24px;
+    border: 1px solid #dcdcde;
+    border-radius: 4px;
+    background: #fff;
+}
+
+.sendora-card h2 {
+    margin-top: 0;
+}
+
+.sendora-checkboxes {
+    display: grid;
+    gap: 10px;
+    margin-top: 16px;
+}
+
+.sendora-connection-result {
+    display: inline-block;
+    margin-left: 8px;
+    font-weight: 600;
+}
+
+.sendora-connection-result.is-success {
+    color: #008a20;
+}
+
+.sendora-connection-result.is-error {
+    color: #b32d2e;
+}
