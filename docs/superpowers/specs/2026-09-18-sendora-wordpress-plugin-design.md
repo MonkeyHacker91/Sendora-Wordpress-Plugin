@@ -1,6 +1,6 @@
 # Sendora WordPress Plugin — Design
 
-**Status:** draft (pending user review)  
+**Status:** approved  
 **Date:** 2026-09-18  
 **Repo:** `Sendora Wordpress Plugin`  
 **Related:** Sendora Public API (`api.sendora.com.br/api`), widget público (`/public/widget/embed`)
