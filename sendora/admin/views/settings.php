@@ -164,14 +164,22 @@ if (!defined('ABSPATH')) {
             <h2><?php echo esc_html__('WooCommerce', 'sendora'); ?></h2>
             <fieldset class="sendora-checkboxes">
                 <legend class="screen-reader-text"><?php echo esc_html__('WooCommerce synchronization events', 'sendora'); ?></legend>
-                <label><input name="sendora_settings[woo_on_created]" type="checkbox" value="1" <?php checked($settings['woo_on_created']); ?>>
-                    <?php echo esc_html__('Sync when an order is created', 'sendora'); ?></label>
                 <label><input name="sendora_settings[woo_on_paid]" type="checkbox" value="1" <?php checked($settings['woo_on_paid']); ?>>
                     <?php echo esc_html__('Sync when payment completes', 'sendora'); ?></label>
                 <label><input name="sendora_settings[woo_on_cancelled]" type="checkbox" value="1" <?php checked($settings['woo_on_cancelled']); ?>>
                     <?php echo esc_html__('Sync when an order is cancelled', 'sendora'); ?></label>
             </fieldset>
             <table class="form-table" role="presentation">
+                <tr>
+                    <th scope="row"><label for="sendora-created-mode"><?php echo esc_html__('New order action', 'sendora'); ?></label></th>
+                    <td>
+                        <select id="sendora-created-mode" name="sendora_settings[woo_created_mode]">
+                            <option value="off" <?php selected($settings['woo_created_mode'], 'off'); ?>><?php echo esc_html__('Off', 'sendora'); ?></option>
+                            <option value="contact_only" <?php selected($settings['woo_created_mode'], 'contact_only'); ?>><?php echo esc_html__('Sync contact only', 'sendora'); ?></option>
+                            <option value="contact_and_flow" <?php selected($settings['woo_created_mode'], 'contact_and_flow'); ?>><?php echo esc_html__('Sync contact and trigger default flow', 'sendora'); ?></option>
+                        </select>
+                    </td>
+                </tr>
                 <tr>
                     <th scope="row"><label for="sendora-paid-mode"><?php echo esc_html__('Paid order action', 'sendora'); ?></label></th>
                     <td>

@@ -17,6 +17,8 @@ $GLOBALS['sendora_test_transients'] = [];
 $GLOBALS['sendora_test_nonce_valid'] = 1;
 $GLOBALS['sendora_test_cf7_forms'] = [];
 $GLOBALS['sendora_test_cf7_posted_data'] = [];
+$GLOBALS['sendora_test_wc_orders'] = [];
+$GLOBALS['sendora_test_scheduled_events'] = [];
 
 if (!defined('SENDORA_VERSION')) {
     define('SENDORA_VERSION', '0.1.0-test');
@@ -24,6 +26,10 @@ if (!defined('SENDORA_VERSION')) {
 
 if (!defined('WPCF7_VERSION')) {
     define('WPCF7_VERSION', '6.0-test');
+}
+
+if (!defined('WC_VERSION')) {
+    define('WC_VERSION', '10.0-test');
 }
 
 if (!defined('SENDORA_PLUGIN_FILE')) {
@@ -389,6 +395,25 @@ if (!function_exists('current_time')) {
     }
 }
 
+if (!function_exists('wc_get_order')) {
+    function wc_get_order(int $order_id): mixed
+    {
+        return $GLOBALS['sendora_test_wc_orders'][$order_id] ?? false;
+    }
+}
+
+if (!function_exists('wp_schedule_single_event')) {
+    function wp_schedule_single_event(
+        int $timestamp,
+        string $hook,
+        array $args = []
+    ): bool {
+        $GLOBALS['sendora_test_scheduled_events'][] = compact('timestamp', 'hook', 'args');
+
+        return true;
+    }
+}
+
 if (!function_exists('sanitize_key')) {
     function sanitize_key(string $key): string
     {
@@ -496,6 +521,7 @@ foreach ([
     dirname(__DIR__) . '/includes/class-sendora-forms.php',
     dirname(__DIR__) . '/includes/class-sendora-widget.php',
     dirname(__DIR__) . '/includes/class-sendora-cf7.php',
+    dirname(__DIR__) . '/includes/class-sendora-woocommerce.php',
     dirname(__DIR__) . '/includes/class-sendora-plugin.php',
 ] as $file) {
     if (is_file($file)) {

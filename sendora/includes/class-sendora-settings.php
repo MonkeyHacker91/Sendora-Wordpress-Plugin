@@ -176,6 +176,13 @@ final class Sendora_Settings
             ? $paid_mode
             : 'off';
 
+        $created_mode = sanitize_text_field((string) ($input['woo_created_mode'] ?? 'off'));
+        $settings['woo_created_mode'] = in_array(
+            $created_mode,
+            ['contact_only', 'contact_and_flow', 'off'],
+            true
+        ) ? $created_mode : 'off';
+
         $settings['cf7_mappings'] = array_key_exists('cf7_mappings', $input)
             ? self::sanitize_cf7_mappings($input['cf7_mappings'])
             : (is_array($saved['cf7_mappings'] ?? null) ? $saved['cf7_mappings'] : []);
@@ -189,8 +196,12 @@ final class Sendora_Settings
     public static function get_settings(): array
     {
         $saved = get_option(self::OPTION_KEY, []);
+        $saved = is_array($saved) ? $saved : [];
+        if (!array_key_exists('woo_created_mode', $saved) && !empty($saved['woo_on_created'])) {
+            $saved['woo_created_mode'] = 'contact_only';
+        }
 
-        return array_merge(self::defaults(), is_array($saved) ? $saved : []);
+        return array_merge(self::defaults(), $saved);
     }
 
     public static function mask_api_key(string $api_key): string
@@ -240,6 +251,7 @@ final class Sendora_Settings
             'default_flow_id' => '',
             'default_cc' => '55',
             'woo_on_created' => false,
+            'woo_created_mode' => 'off',
             'woo_on_paid' => false,
             'woo_on_cancelled' => false,
             'woo_paid_flow_id' => '',

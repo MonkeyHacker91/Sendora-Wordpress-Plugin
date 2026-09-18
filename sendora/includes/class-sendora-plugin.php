@@ -23,6 +23,12 @@ final class Sendora_Plugin
         if (defined('WPCF7_VERSION') && class_exists('Sendora_CF7')) {
             (new Sendora_CF7())->run();
         }
+        if (
+            (defined('WC_VERSION') || class_exists('WooCommerce'))
+            && class_exists('Sendora_WooCommerce')
+        ) {
+            (new Sendora_WooCommerce())->run();
+        }
     }
 
     private function __construct()

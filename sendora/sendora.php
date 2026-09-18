@@ -35,5 +35,9 @@ register_activation_hook(SENDORA_PLUGIN_FILE, static function (): void {
 });
 
 add_action('plugins_loaded', static function (): void {
+    if (defined('WC_VERSION') || class_exists('WooCommerce')) {
+        require_once SENDORA_PLUGIN_DIR . 'includes/class-sendora-woocommerce.php';
+    }
+
     Sendora_Plugin::instance()->run();
 });

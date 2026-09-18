@@ -39,6 +39,7 @@ abstract class SendoraSettingsTest extends SendoraApiClientTest
             'woo_on_created' => '1',
             'woo_on_paid' => '1',
             'woo_on_cancelled' => '1',
+            'woo_created_mode' => 'contact_and_flow',
             'woo_paid_flow_id' => 'flow-paid',
             'woo_paid_mode' => 'flow',
         ]);
@@ -48,6 +49,7 @@ abstract class SendoraSettingsTest extends SendoraApiClientTest
         $this->assertTrue($settings['widget_enabled']);
         $this->assertSame('widget-1', $settings['widget_id']);
         $this->assertSame('55', $settings['default_cc']);
+        $this->assertSame('contact_and_flow', $settings['woo_created_mode']);
         $this->assertSame('flow', $settings['woo_paid_mode']);
     }
 
@@ -67,6 +69,7 @@ abstract class SendoraSettingsTest extends SendoraApiClientTest
         $this->assertSame('https://api.sendora.com.br', $settings['api_base']);
         $this->assertSame('sk_existing_key', $settings['api_key']);
         $this->assertSame('off', $settings['woo_paid_mode']);
+        $this->assertSame('off', $settings['woo_created_mode']);
         $this->assertCount(2, $GLOBALS['sendora_test_settings_errors']);
     }
 
