@@ -2,8 +2,9 @@
 /**
  * Sendora settings page.
  *
- * @var array<string, bool|string> $settings
+ * @var array<string, mixed> $settings
  * @var array<int, array{id: string, name: string}> $flows
+ * @var array<int, array{id: string, title: string, tags: array<int, string>}> $cf7_forms
  * @var string $masked_api_key
  */
 
@@ -98,6 +99,66 @@ if (!defined('ABSPATH')) {
                 </tr>
             </table>
         </section>
+
+        <?php if (defined('WPCF7_VERSION')) : ?>
+            <section class="sendora-card">
+                <h2><?php echo esc_html__('Contact Form 7', 'sendora'); ?></h2>
+                <?php if ($cf7_forms === []) : ?>
+                    <p><?php echo esc_html__('No published Contact Form 7 forms were found.', 'sendora'); ?></p>
+                <?php else : ?>
+                    <p><?php echo esc_html__('Map each form tag to a Sendora contact field. A phone mapping enables synchronization.', 'sendora'); ?></p>
+                    <table class="widefat striped">
+                        <thead>
+                            <tr>
+                                <th><?php echo esc_html__('Form', 'sendora'); ?></th>
+                                <th><?php echo esc_html__('Name tag', 'sendora'); ?></th>
+                                <th><?php echo esc_html__('Phone tag', 'sendora'); ?></th>
+                                <th><?php echo esc_html__('Email tag', 'sendora'); ?></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($cf7_forms as $form) : ?>
+                                <?php
+                                $form_id = $form['id'];
+                                $saved_mapping = is_array($settings['cf7_mappings'] ?? null)
+                                    ? ($settings['cf7_mappings'][$form_id] ?? [])
+                                    : [];
+                                $saved_mapping = is_array($saved_mapping) ? $saved_mapping : [];
+                                ?>
+                                <tr>
+                                    <td>
+                                        <?php echo esc_html($form['title']); ?>
+                                        <code>#<?php echo esc_html($form_id); ?></code>
+                                        <input type="hidden"
+                                            name="sendora_settings[cf7_mappings][<?php echo esc_attr($form_id); ?>][form_id]"
+                                            value="<?php echo esc_attr($form_id); ?>">
+                                    </td>
+                                    <?php foreach (['name' => __('Name', 'sendora'), 'phone' => __('Phone', 'sendora'), 'email' => __('Email', 'sendora')] as $field => $label) : ?>
+                                        <td>
+                                            <label class="screen-reader-text" for="sendora-cf7-<?php echo esc_attr($form_id . '-' . $field); ?>">
+                                                <?php echo esc_html($form['title'] . ': ' . $label); ?>
+                                            </label>
+                                            <select id="sendora-cf7-<?php echo esc_attr($form_id . '-' . $field); ?>"
+                                                name="sendora_settings[cf7_mappings][<?php echo esc_attr($form_id); ?>][<?php echo esc_attr($field); ?>]">
+                                                <option value=""><?php echo esc_html__('Not mapped', 'sendora'); ?></option>
+                                                <?php foreach ($form['tags'] as $tag) : ?>
+                                                    <option value="<?php echo esc_attr($tag); ?>" <?php selected($saved_mapping[$field] ?? '', $tag); ?>>
+                                                        <?php echo esc_html($tag); ?>
+                                                    </option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                        </td>
+                                    <?php endforeach; ?>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                    <p class="description">
+                        <?php echo esc_html__('Mapped submissions are upserted after mail is sent and use the default flow configured above.', 'sendora'); ?>
+                    </p>
+                <?php endif; ?>
+            </section>
+        <?php endif; ?>
 
         <section class="sendora-card">
             <h2><?php echo esc_html__('WooCommerce', 'sendora'); ?></h2>

@@ -76,6 +76,53 @@ abstract class SendoraSettingsTest extends SendoraApiClientTest
         $this->assertSame('', Sendora_Settings::mask_api_key(''));
     }
 
+    public function test_sanitize_normalizes_cf7_mapping_rows(): void
+    {
+        $settings = Sendora_Settings::sanitize([
+            'api_base' => 'https://api.sendora.com.br',
+            'cf7_mappings' => [
+                '17' => [
+                    'form_id' => '17',
+                    'name' => ' your-name ',
+                    'phone' => 'your-phone<script>',
+                    'email' => 'your_email',
+                ],
+                'invalid' => [
+                    'form_id' => 'not-a-form',
+                    'phone' => 'phone',
+                ],
+            ],
+        ]);
+
+        $this->assertSame([
+            '17' => [
+                'form_id' => '17',
+                'name' => 'your-name',
+                'phone' => 'your-phonescript',
+                'email' => 'your_email',
+            ],
+        ], $settings['cf7_mappings']);
+    }
+
+    public function test_sanitize_preserves_cf7_mappings_when_cf7_fields_are_absent(): void
+    {
+        $mapping = [
+            '17' => [
+                'form_id' => '17',
+                'name' => 'your-name',
+                'phone' => 'your-phone',
+                'email' => 'your-email',
+            ],
+        ];
+        $GLOBALS['sendora_test_options']['sendora_settings']['cf7_mappings'] = $mapping;
+
+        $settings = Sendora_Settings::sanitize([
+            'api_base' => 'https://api.sendora.com.br',
+        ]);
+
+        $this->assertSame($mapping, $settings['cf7_mappings']);
+    }
+
     public function test_ajax_connection_returns_only_status_and_message(): void
     {
         $GLOBALS['sendora_test_http_handler'] = fn (): array => [

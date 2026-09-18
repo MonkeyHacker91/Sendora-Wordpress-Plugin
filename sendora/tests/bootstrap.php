@@ -15,9 +15,15 @@ $GLOBALS['sendora_test_enqueued_styles'] = [];
 $GLOBALS['sendora_test_enqueued_scripts'] = [];
 $GLOBALS['sendora_test_transients'] = [];
 $GLOBALS['sendora_test_nonce_valid'] = 1;
+$GLOBALS['sendora_test_cf7_forms'] = [];
+$GLOBALS['sendora_test_cf7_posted_data'] = [];
 
 if (!defined('SENDORA_VERSION')) {
     define('SENDORA_VERSION', '0.1.0-test');
+}
+
+if (!defined('WPCF7_VERSION')) {
+    define('WPCF7_VERSION', '6.0-test');
 }
 
 if (!defined('SENDORA_PLUGIN_FILE')) {
@@ -371,12 +377,81 @@ if (!class_exists('WP_Error')) {
     }
 }
 
+if (!class_exists('WPCF7_FormTag')) {
+    class WPCF7_FormTag
+    {
+        public function __construct(public string $name)
+        {
+        }
+    }
+}
+
+if (!class_exists('WPCF7_ContactForm')) {
+    class WPCF7_ContactForm
+    {
+        /**
+         * @param array<int, WPCF7_FormTag> $tags
+         */
+        public function __construct(
+            private int $form_id,
+            private string $form_title,
+            private array $tags = []
+        ) {
+        }
+
+        /**
+         * @return array<int, self>
+         */
+        public static function find(array $arguments = []): array
+        {
+            return $GLOBALS['sendora_test_cf7_forms'];
+        }
+
+        public function id(): int
+        {
+            return $this->form_id;
+        }
+
+        public function title(): string
+        {
+            return $this->form_title;
+        }
+
+        /**
+         * @return array<int, WPCF7_FormTag>
+         */
+        public function scan_form_tags(): array
+        {
+            return $this->tags;
+        }
+    }
+}
+
+if (!class_exists('WPCF7_Submission')) {
+    class WPCF7_Submission
+    {
+        public static function get_instance(): self
+        {
+            return new self();
+        }
+
+        /**
+         * @return array<string, mixed>
+         */
+        public function get_posted_data(): array
+        {
+            return $GLOBALS['sendora_test_cf7_posted_data'];
+        }
+    }
+}
+
 foreach ([
     dirname(__DIR__) . '/includes/class-sendora-phone.php',
     dirname(__DIR__) . '/includes/class-sendora-logger.php',
     dirname(__DIR__) . '/includes/class-sendora-api-client.php',
     dirname(__DIR__) . '/includes/class-sendora-settings.php',
     dirname(__DIR__) . '/includes/class-sendora-forms.php',
+    dirname(__DIR__) . '/includes/class-sendora-cf7.php',
     dirname(__DIR__) . '/includes/class-sendora-plugin.php',
 ] as $file) {
     if (is_file($file)) {

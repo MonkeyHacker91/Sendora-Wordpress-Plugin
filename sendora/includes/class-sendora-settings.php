@@ -95,6 +95,7 @@ final class Sendora_Settings
 
         $settings = self::get_settings();
         $flows = $this->load_flows($settings);
+        $cf7_forms = class_exists('Sendora_CF7') ? Sendora_CF7::list_forms() : [];
         $masked_api_key = self::mask_api_key($settings['api_key']);
 
         require SENDORA_PLUGIN_DIR . 'admin/views/settings.php';
@@ -123,7 +124,7 @@ final class Sendora_Settings
 
     /**
      * @param mixed $input Untrusted Settings API input.
-     * @return array<string, bool|string>
+     * @return array<string, mixed>
      */
     public static function sanitize(mixed $input): array
     {
@@ -175,11 +176,15 @@ final class Sendora_Settings
             ? $paid_mode
             : 'off';
 
+        $settings['cf7_mappings'] = array_key_exists('cf7_mappings', $input)
+            ? self::sanitize_cf7_mappings($input['cf7_mappings'])
+            : (is_array($saved['cf7_mappings'] ?? null) ? $saved['cf7_mappings'] : []);
+
         return $settings;
     }
 
     /**
-     * @return array<string, bool|string>
+     * @return array<string, mixed>
      */
     public static function get_settings(): array
     {
@@ -223,7 +228,7 @@ final class Sendora_Settings
     }
 
     /**
-     * @return array<string, bool|string>
+     * @return array<string, mixed>
      */
     private static function defaults(): array
     {
@@ -239,7 +244,41 @@ final class Sendora_Settings
             'woo_on_cancelled' => false,
             'woo_paid_flow_id' => '',
             'woo_paid_mode' => 'off',
+            'cf7_mappings' => [],
         ];
+    }
+
+    /**
+     * @return array<string, array{form_id: string, name: string, phone: string, email: string}>
+     */
+    private static function sanitize_cf7_mappings(mixed $input): array
+    {
+        if (!is_array($input)) {
+            return [];
+        }
+
+        $mappings = [];
+
+        foreach ($input as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+
+            $form_id = trim((string) ($row['form_id'] ?? ''));
+            $phone = sanitize_key((string) ($row['phone'] ?? ''));
+            if (!ctype_digit($form_id) || (int) $form_id < 1 || $phone === '') {
+                continue;
+            }
+
+            $mappings[$form_id] = [
+                'form_id' => $form_id,
+                'name' => sanitize_key((string) ($row['name'] ?? '')),
+                'phone' => $phone,
+                'email' => sanitize_key((string) ($row['email'] ?? '')),
+            ];
+        }
+
+        return $mappings;
     }
 
     private static function is_https_url(string $url): bool
@@ -252,7 +291,7 @@ final class Sendora_Settings
     }
 
     /**
-     * @param array<string, bool|string> $settings
+     * @param array<string, mixed> $settings
      * @return array<int, array{id: string, name: string}>
      */
     private function load_flows(array $settings): array

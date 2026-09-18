@@ -19,6 +19,9 @@ final class Sendora_Plugin
     {
         (new Sendora_Settings())->run();
         (new Sendora_Forms())->run();
+        if (defined('WPCF7_VERSION') && class_exists('Sendora_CF7')) {
+            (new Sendora_CF7())->run();
+        }
     }
 
     private function __construct()

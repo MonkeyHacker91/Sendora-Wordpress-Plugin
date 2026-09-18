@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-abstract class SendoraLoggerTest extends SendoraApiClientTest
+abstract class SendoraLoggerTest extends SendoraSettingsTest
 {
     protected function setUp(): void
     {
