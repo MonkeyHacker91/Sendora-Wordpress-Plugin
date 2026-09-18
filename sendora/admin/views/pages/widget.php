@@ -35,7 +35,7 @@ $sendora_widget_page_ids = is_array($settings['widget_page_ids'] ?? null)
             <span><?php echo esc_html__('ID do widget', 'sendora'); ?></span>
             <input class="sendora-input" id="sendora-widget-id" name="sendora_settings[widget_id]" type="text"
                 value="<?php echo esc_attr((string) $settings['widget_id']); ?>"
-                placeholder="8ab21a48-c6e2-4cea-99ef-56f18eb8d4c3"
+                placeholder="a1b2c3d4-e5f6-4890-abcd-ef1234567890"
                 spellcheck="false" autocomplete="off">
         </label>
         <p class="sendora-help">

@@ -1,2 +1,24 @@
+# Dependencies & caches
 /vendor/
 /.phpunit.cache/
+/node_modules/
+
+# Secrets & local env
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials.json
+auth.json
+
+# Build artifacts
+*.zip
+/dist/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/

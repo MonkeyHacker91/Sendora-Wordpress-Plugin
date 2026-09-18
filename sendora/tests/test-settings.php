@@ -42,7 +42,7 @@ abstract class SendoraSettingsTest extends SendoraApiClientTest
             'api_base' => 'https://api.example.com/',
             'api_key' => 'sk_new_key',
             'widget_enabled' => '1',
-            'widget_id' => ' 8ab21a48-c6e2-4cea-99ef-56f18eb8d4c3&v=6 ',
+            'widget_id' => ' a1b2c3d4-e5f6-4890-abcd-ef1234567890&v=6 ',
             'default_flow_id' => 'flow-1',
             'default_cc' => '+55',
             'woo_on_created' => '1',
@@ -56,7 +56,7 @@ abstract class SendoraSettingsTest extends SendoraApiClientTest
         $this->assertSame('https://api.sendora.com.br', $settings['api_base']);
         $this->assertSame('sk_new_key', $settings['api_key']);
         $this->assertTrue($settings['widget_enabled']);
-        $this->assertSame('8ab21a48-c6e2-4cea-99ef-56f18eb8d4c3', $settings['widget_id']);
+        $this->assertSame('a1b2c3d4-e5f6-4890-abcd-ef1234567890', $settings['widget_id']);
         $this->assertSame('55', $settings['default_cc']);
         $this->assertSame('contact_and_flow', $settings['woo_created_mode']);
         $this->assertSame('flow', $settings['woo_paid_mode']);
@@ -65,11 +65,11 @@ abstract class SendoraSettingsTest extends SendoraApiClientTest
     public function test_sanitize_extracts_widget_uuid_from_url(): void
     {
         $settings = Sendora_Settings::sanitize([
-            'widget_id' => 'https://api.sendora.com.br/public/widget/embed?id=8ab21a48-c6e2-4cea-99ef-56f18eb8d4c3&v=6',
+            'widget_id' => 'https://api.sendora.com.br/public/widget/embed?id=a1b2c3d4-e5f6-4890-abcd-ef1234567890&v=6',
             'widget_enabled' => '1',
         ]);
 
-        $this->assertSame('8ab21a48-c6e2-4cea-99ef-56f18eb8d4c3', $settings['widget_id']);
+        $this->assertSame('a1b2c3d4-e5f6-4890-abcd-ef1234567890', $settings['widget_id']);
     }
 
     public function test_sanitize_widget_display_and_page_ids(): void
@@ -211,7 +211,7 @@ abstract class SendoraSettingsTest extends SendoraApiClientTest
             [
                 'api_key' => 'sk_old',
                 'widget_enabled' => true,
-                'widget_id' => '8ab21a48-c6e2-4cea-99ef-56f18eb8d4c3',
+                'widget_id' => 'a1b2c3d4-e5f6-4890-abcd-ef1234567890',
             ]
         );
 
@@ -222,6 +222,6 @@ abstract class SendoraSettingsTest extends SendoraApiClientTest
 
         $this->assertSame('sk_new_partial', $settings['api_key']);
         $this->assertTrue($settings['widget_enabled']);
-        $this->assertSame('8ab21a48-c6e2-4cea-99ef-56f18eb8d4c3', $settings['widget_id']);
+        $this->assertSame('a1b2c3d4-e5f6-4890-abcd-ef1234567890', $settings['widget_id']);
     }
 }

@@ -97,7 +97,7 @@ if (!defined('ABSPATH')) {
                     <td>
                         <input class="regular-text" id="sendora-widget-id" name="sendora_settings[widget_id]" type="text"
                             value="<?php echo esc_attr((string) $settings['widget_id']); ?>"
-                            placeholder="8ab21a48-c6e2-4cea-99ef-56f18eb8d4c3"
+                            placeholder="a1b2c3d4-e5f6-4890-abcd-ef1234567890"
                             spellcheck="false" autocomplete="off">
                         <p class="description">
                             <?php echo esc_html__('Cole só o UUID do widget. Se colar a URL com &v=6, o ID é extraído automaticamente.', 'sendora'); ?>

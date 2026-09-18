@@ -1,0 +1,33 @@
+# Never commit local ops / secrets from this workspace
+.superpowers/
+*.zip
+.env
+.env.*
+*.pem
+*.key
+credentials.json
+auth.json
+
+# Ad-hoc remote/debug scripts (may contain host paths or keys)
+*.sh
+tmp_*
+debug-*
+deploy-*
+dw*.sh
+wdbg.sh
+pages*.sh
+set-widget.php
+sendora-smoke.php
+probe-*
+run-*
+fix-*
+enable-*
+normalize-*
+redeploy-*
+repro-*
+ffref.sh
+test-ajax-browser.sh
+
+# OS
+.DS_Store
+Thumbs.db

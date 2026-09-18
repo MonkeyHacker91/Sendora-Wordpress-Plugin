@@ -73,13 +73,13 @@ abstract class SendoraWidgetTest extends SendoraCf7Test
     public function test_sanitize_widget_id_strips_query_junk(): void
     {
         $this->assertSame(
-            '8ab21a48-c6e2-4cea-99ef-56f18eb8d4c3',
-            Sendora_Widget::sanitize_widget_id('8ab21a48-c6e2-4cea-99ef-56f18eb8d4c3&v=6')
+            'a1b2c3d4-e5f6-4890-abcd-ef1234567890',
+            Sendora_Widget::sanitize_widget_id('a1b2c3d4-e5f6-4890-abcd-ef1234567890&v=6')
         );
         $this->assertSame(
-            '8ab21a48-c6e2-4cea-99ef-56f18eb8d4c3',
+            'a1b2c3d4-e5f6-4890-abcd-ef1234567890',
             Sendora_Widget::sanitize_widget_id(
-                'https://api.sendora.com.br/public/widget/embed?id=8ab21a48-c6e2-4cea-99ef-56f18eb8d4c3&v=6'
+                'https://api.sendora.com.br/public/widget/embed?id=a1b2c3d4-e5f6-4890-abcd-ef1234567890&v=6'
             )
         );
         $this->assertSame('', Sendora_Widget::sanitize_widget_id('not-a-uuid'));
