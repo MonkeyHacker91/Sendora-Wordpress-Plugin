@@ -13,16 +13,25 @@ abstract class SendoraSettingsTest extends SendoraApiClientTest
         $GLOBALS['sendora_test_json_response'] = null;
     }
 
-    public function test_run_registers_admin_and_ajax_hooks(): void
+    public function test_run_registers_settings_hooks(): void
     {
         $this->assertTrue(class_exists('Sendora_Settings'), 'Sendora_Settings must exist.');
 
         (new Sendora_Settings())->run();
 
-        $this->assertArrayHasKey('admin_menu', $GLOBALS['sendora_test_actions']);
         $this->assertArrayHasKey('admin_init', $GLOBALS['sendora_test_actions']);
-        $this->assertArrayHasKey('admin_enqueue_scripts', $GLOBALS['sendora_test_actions']);
+        $this->assertArrayNotHasKey('admin_menu', $GLOBALS['sendora_test_actions']);
+    }
+
+    public function test_admin_registers_menu_and_ajax_hooks(): void
+    {
+        $this->assertTrue(class_exists('Sendora_Admin'), 'Sendora_Admin must exist.');
+
+        (new Sendora_Admin())->run();
+
+        $this->assertArrayHasKey('admin_menu', $GLOBALS['sendora_test_actions']);
         $this->assertArrayHasKey('wp_ajax_sendora_test_connection', $GLOBALS['sendora_test_actions']);
+        $this->assertArrayHasKey('wp_ajax_sendora_disconnect', $GLOBALS['sendora_test_actions']);
     }
 
     public function test_sanitize_accepts_https_and_sk_key(): void
@@ -33,7 +42,7 @@ abstract class SendoraSettingsTest extends SendoraApiClientTest
             'api_base' => 'https://api.example.com/',
             'api_key' => 'sk_new_key',
             'widget_enabled' => '1',
-            'widget_id' => ' widget-1 ',
+            'widget_id' => ' 8ab21a48-c6e2-4cea-99ef-56f18eb8d4c3&v=6 ',
             'default_flow_id' => 'flow-1',
             'default_cc' => '+55',
             'woo_on_created' => '1',
@@ -44,19 +53,55 @@ abstract class SendoraSettingsTest extends SendoraApiClientTest
             'woo_paid_mode' => 'flow',
         ]);
 
-        $this->assertSame('https://api.example.com', $settings['api_base']);
+        $this->assertSame('https://api.sendora.com.br', $settings['api_base']);
         $this->assertSame('sk_new_key', $settings['api_key']);
         $this->assertTrue($settings['widget_enabled']);
-        $this->assertSame('widget-1', $settings['widget_id']);
+        $this->assertSame('8ab21a48-c6e2-4cea-99ef-56f18eb8d4c3', $settings['widget_id']);
         $this->assertSame('55', $settings['default_cc']);
         $this->assertSame('contact_and_flow', $settings['woo_created_mode']);
         $this->assertSame('flow', $settings['woo_paid_mode']);
     }
 
+    public function test_sanitize_extracts_widget_uuid_from_url(): void
+    {
+        $settings = Sendora_Settings::sanitize([
+            'widget_id' => 'https://api.sendora.com.br/public/widget/embed?id=8ab21a48-c6e2-4cea-99ef-56f18eb8d4c3&v=6',
+            'widget_enabled' => '1',
+        ]);
+
+        $this->assertSame('8ab21a48-c6e2-4cea-99ef-56f18eb8d4c3', $settings['widget_id']);
+    }
+
+    public function test_sanitize_widget_display_and_page_ids(): void
+    {
+        $settings = Sendora_Settings::sanitize([
+            'widget_display' => 'specific',
+            'widget_page_ids' => ['12', '0', '12', '5', 'abc'],
+        ]);
+
+        $this->assertSame('specific', $settings['widget_display']);
+        $this->assertSame([5, 12], $settings['widget_page_ids']);
+    }
+
+    public function test_list_pages_for_widget_shows_titles_not_bare_ids(): void
+    {
+        $GLOBALS['sendora_test_pages'] = [
+            (object) ['ID' => 10, 'post_title' => 'Sobre nós', 'post_name' => 'sobre-nos'],
+            (object) ['ID' => 3487, 'post_title' => '', 'post_name' => '3487-2'],
+            (object) ['ID' => 99, 'post_title' => '', 'post_name' => ''],
+        ];
+
+        $pages = Sendora_Settings::list_pages_for_widget();
+
+        $this->assertSame('Sobre nós (#10)', $pages[0]['title']);
+        $this->assertSame('(sem título) (#3487)', $pages[1]['title']);
+        $this->assertSame('(sem título) (#99)', $pages[2]['title']);
+    }
+
     public function test_sanitize_rejects_http_and_non_sk_key_without_overwriting_saved_values(): void
     {
         $GLOBALS['sendora_test_options']['sendora_settings'] = [
-            'api_base' => 'https://api.sendora.com.br',
+            'api_base' => 'https://evil.example.com',
             'api_key' => 'sk_existing_key',
         ];
 
@@ -70,7 +115,7 @@ abstract class SendoraSettingsTest extends SendoraApiClientTest
         $this->assertSame('sk_existing_key', $settings['api_key']);
         $this->assertSame('off', $settings['woo_paid_mode']);
         $this->assertSame('off', $settings['woo_created_mode']);
-        $this->assertCount(2, $GLOBALS['sendora_test_settings_errors']);
+        $this->assertCount(1, $GLOBALS['sendora_test_settings_errors']);
     }
 
     public function test_mask_api_key_only_reveals_last_four_characters(): void
@@ -130,23 +175,53 @@ abstract class SendoraSettingsTest extends SendoraApiClientTest
     {
         $GLOBALS['sendora_test_http_handler'] = fn (): array => [
             'response' => ['code' => 200],
-            'body' => '[]',
+            'body' => wp_json_encode([
+                'ok' => true,
+                'data' => [
+                    'user_id' => 'u1',
+                    'company_name' => 'Acme',
+                    'full_name' => 'Ada',
+                    'billing_email' => 'ada@example.com',
+                ],
+            ]),
         ];
 
         try {
-            Sendora_Settings::ajax_test_connection();
+            Sendora_Admin::ajax_test_connection();
             $this->fail('Expected wp_send_json to end the request.');
         } catch (RuntimeException $exception) {
             $this->assertSame('sendora_test_json_complete', $exception->getMessage());
         }
 
-        $this->assertSame(
-            ['ok' => true, 'message' => 'Connected to Sendora.'],
-            $GLOBALS['sendora_test_json_response']
-        );
+        $response = $GLOBALS['sendora_test_json_response'];
+        $this->assertIsArray($response);
+        $this->assertTrue($response['ok']);
+        $this->assertSame('Conectado à Sendora.', $response['message']);
+        $this->assertSame('Acme', $response['workspace']);
         $this->assertStringNotContainsString(
             'sk_test_key',
-            json_encode($GLOBALS['sendora_test_json_response'], JSON_THROW_ON_ERROR)
+            json_encode($response, JSON_THROW_ON_ERROR)
         );
+    }
+
+    public function test_partial_connection_sanitize_keeps_other_settings(): void
+    {
+        $GLOBALS['sendora_test_options']['sendora_settings'] = array_merge(
+            Sendora_Settings::get_settings(),
+            [
+                'api_key' => 'sk_old',
+                'widget_enabled' => true,
+                'widget_id' => '8ab21a48-c6e2-4cea-99ef-56f18eb8d4c3',
+            ]
+        );
+
+        $settings = Sendora_Settings::sanitize([
+            '_partial' => 'connection',
+            'api_key' => 'sk_new_partial',
+        ]);
+
+        $this->assertSame('sk_new_partial', $settings['api_key']);
+        $this->assertTrue($settings['widget_enabled']);
+        $this->assertSame('8ab21a48-c6e2-4cea-99ef-56f18eb8d4c3', $settings['widget_id']);
     }
 }

@@ -13,6 +13,14 @@ $GLOBALS['sendora_test_log_id'] = 0;
 $GLOBALS['sendora_test_shortcodes'] = [];
 $GLOBALS['sendora_test_enqueued_styles'] = [];
 $GLOBALS['sendora_test_enqueued_scripts'] = [];
+$GLOBALS['sendora_test_registered_scripts'] = [];
+$GLOBALS['sendora_test_inline_scripts'] = [];
+$GLOBALS['sendora_test_is_admin'] = false;
+$GLOBALS['sendora_test_is_feed'] = false;
+$GLOBALS['sendora_test_is_preview'] = false;
+$GLOBALS['sendora_test_is_page'] = false;
+$GLOBALS['sendora_test_queried_object_id'] = 0;
+$GLOBALS['sendora_test_pages'] = [];
 $GLOBALS['sendora_test_transients'] = [];
 $GLOBALS['sendora_test_nonce_valid'] = 1;
 $GLOBALS['sendora_test_cf7_forms'] = [];
@@ -36,11 +44,37 @@ if (!defined('SENDORA_PLUGIN_FILE')) {
     define('SENDORA_PLUGIN_FILE', dirname(__DIR__) . '/sendora.php');
 }
 
+if (!defined('ABSPATH')) {
+    define('ABSPATH', dirname(__DIR__) . '/');
+}
+
 if (!function_exists('get_option')) {
     function get_option(string $option, mixed $default = false): mixed
     {
         return $GLOBALS['sendora_test_options'][$option] ?? $default;
     }
+}
+
+if (!function_exists('update_option')) {
+    function update_option(string $option, mixed $value, mixed $autoload = null): bool
+    {
+        $GLOBALS['sendora_test_options'][$option] = $value;
+
+        return true;
+    }
+}
+
+if (!function_exists('delete_option')) {
+    function delete_option(string $option): bool
+    {
+        unset($GLOBALS['sendora_test_options'][$option]);
+
+        return true;
+    }
+}
+
+if (!defined('MINUTE_IN_SECONDS')) {
+    define('MINUTE_IN_SECONDS', 60);
 }
 
 if (!function_exists('wp_remote_request')) {
@@ -128,6 +162,109 @@ if (!function_exists('wp_enqueue_script')) {
     }
 }
 
+if (!function_exists('wp_localize_script')) {
+    function wp_localize_script(string $handle, string $object_name, array $data): bool
+    {
+        $GLOBALS['sendora_test_localized'][$handle] = [
+            'object' => $object_name,
+            'data' => $data,
+        ];
+
+        return true;
+    }
+}
+
+if (!function_exists('wp_register_script')) {
+    function wp_register_script(
+        string $handle,
+        string|false $src,
+        array $deps = [],
+        string|bool|null $version = false,
+        bool|array $args = false
+    ): bool {
+        $GLOBALS['sendora_test_registered_scripts'][$handle] = compact('src', 'deps', 'version', 'args');
+
+        return true;
+    }
+}
+
+if (!function_exists('wp_add_inline_script')) {
+    function wp_add_inline_script(string $handle, string $data, string $position = 'after'): bool
+    {
+        $GLOBALS['sendora_test_inline_scripts'][$handle][] = compact('data', 'position');
+
+        return true;
+    }
+}
+
+if (!function_exists('is_admin')) {
+    function is_admin(): bool
+    {
+        return !empty($GLOBALS['sendora_test_is_admin']);
+    }
+}
+
+if (!function_exists('is_feed')) {
+    function is_feed(): bool
+    {
+        return !empty($GLOBALS['sendora_test_is_feed']);
+    }
+}
+
+if (!function_exists('is_preview')) {
+    function is_preview(): bool
+    {
+        return !empty($GLOBALS['sendora_test_is_preview']);
+    }
+}
+
+if (!function_exists('is_page')) {
+    function is_page(): bool
+    {
+        return !empty($GLOBALS['sendora_test_is_page']);
+    }
+}
+
+if (!function_exists('get_queried_object_id')) {
+    function get_queried_object_id(): int
+    {
+        return (int) ($GLOBALS['sendora_test_queried_object_id'] ?? 0);
+    }
+}
+
+if (!function_exists('get_pages')) {
+    function get_pages(array $args = []): array
+    {
+        return $GLOBALS['sendora_test_pages'] ?? [];
+    }
+}
+
+if (!function_exists('absint')) {
+    function absint(mixed $value): int
+    {
+        return abs((int) $value);
+    }
+}
+
+if (!function_exists('selected')) {
+    function selected(mixed $selected, mixed $current = true, bool $display = true): string
+    {
+        $result = ((string) $selected === (string) $current) ? ' selected="selected"' : '';
+        if ($display) {
+            echo $result;
+        }
+
+        return $result;
+    }
+}
+
+if (!function_exists('wp_parse_url')) {
+    function wp_parse_url(string $url, int $component = -1): mixed
+    {
+        return parse_url($url, $component);
+    }
+}
+
 if (!function_exists('plugins_url')) {
     function plugins_url(string $path = '', string $plugin = ''): string
     {
@@ -163,6 +300,27 @@ if (!function_exists('sanitize_text_field')) {
     function sanitize_text_field(string $value): string
     {
         return trim(strip_tags($value));
+    }
+}
+
+if (!function_exists('sanitize_title')) {
+    function sanitize_title(string $title): string
+    {
+        $title = strtolower(trim(strip_tags($title)));
+        $title = preg_replace('/[^a-z0-9]+/', '-', $title) ?? '';
+
+        return trim($title, '-');
+    }
+}
+
+if (!function_exists('get_the_title')) {
+    function get_the_title(mixed $post = 0): string
+    {
+        if (is_object($post)) {
+            return (string) ($post->post_title ?? '');
+        }
+
+        return '';
     }
 }
 
@@ -205,6 +363,13 @@ if (!function_exists('esc_html__')) {
     function esc_html__(string $text, string $domain = 'default'): string
     {
         return esc_html($text);
+    }
+}
+
+if (!function_exists('esc_attr__')) {
+    function esc_attr__(string $text, string $domain = 'default'): string
+    {
+        return esc_attr($text);
     }
 }
 
@@ -313,6 +478,7 @@ if (!function_exists('set_transient')) {
 if (!isset($GLOBALS['wpdb'])) {
     $GLOBALS['wpdb'] = new class {
         public string $prefix = 'wp_';
+        public string $options = 'wp_options';
 
         public function insert(string $table, array $data, array $format = []): int
         {
@@ -326,6 +492,16 @@ if (!isset($GLOBALS['wpdb'])) {
                 'context' => (string) ($data['context'] ?? ''),
             ];
 
+            return 1;
+        }
+
+        public function update(
+            string $table,
+            array $data,
+            array $where,
+            array|string|null $format = null,
+            array|string|null $where_format = null
+        ): int {
             return 1;
         }
 
@@ -352,13 +528,6 @@ if (!isset($GLOBALS['wpdb'])) {
 
         public function query(string $query): int
         {
-            if (stripos($query, 'TRUNCATE') !== false) {
-                $GLOBALS['sendora_test_logs'] = [];
-                $GLOBALS['sendora_test_log_id'] = 0;
-
-                return 0;
-            }
-
             if (preg_match('/DELETE FROM .+ LIMIT\s+(\d+)/i', $query, $matches)) {
                 $limit = (int) $matches[1];
                 $ids = array_keys($GLOBALS['sendora_test_logs']);
@@ -370,13 +539,30 @@ if (!isset($GLOBALS['wpdb'])) {
                 return $limit;
             }
 
+            if (stripos($query, 'DELETE FROM') !== false) {
+                $GLOBALS['sendora_test_logs'] = [];
+                $GLOBALS['sendora_test_log_id'] = 0;
+
+                return 0;
+            }
+
             return 0;
         }
 
         public function prepare(string $query, mixed ...$args): string
         {
-            if ($args !== []) {
-                $query = preg_replace('/%d/', (string) $args[0], $query, 1) ?? $query;
+            foreach ($args as $arg) {
+                if (str_contains($query, '%i')) {
+                    $query = preg_replace('/%i/', (string) $arg, $query, 1) ?? $query;
+                    continue;
+                }
+                if (str_contains($query, '%d')) {
+                    $query = preg_replace('/%d/', (string) $arg, $query, 1) ?? $query;
+                    continue;
+                }
+                if (str_contains($query, '%s')) {
+                    $query = preg_replace('/%s/', "'" . (string) $arg . "'", $query, 1) ?? $query;
+                }
             }
 
             return $query;
@@ -518,6 +704,9 @@ foreach ([
     dirname(__DIR__) . '/includes/class-sendora-logger.php',
     dirname(__DIR__) . '/includes/class-sendora-api-client.php',
     dirname(__DIR__) . '/includes/class-sendora-settings.php',
+    dirname(__DIR__) . '/includes/class-sendora-connection.php',
+    dirname(__DIR__) . '/includes/Events/class-sendora-events.php',
+    dirname(__DIR__) . '/includes/Admin/class-sendora-admin.php',
     dirname(__DIR__) . '/includes/class-sendora-forms.php',
     dirname(__DIR__) . '/includes/class-sendora-widget.php',
     dirname(__DIR__) . '/includes/class-sendora-cf7.php',

@@ -1,6 +1,15 @@
 <?php
+/**
+ * Public lead form shortcode and AJAX handler.
+ *
+ * @package Sendora
+ */
 
 declare(strict_types=1);
+
+if (!defined('ABSPATH')) {
+    exit;
+}
 
 final class Sendora_Forms
 {
@@ -24,25 +33,25 @@ final class Sendora_Forms
 
         $nonce = esc_attr(wp_create_nonce(self::NONCE_ACTION));
 
-        return '<form class="sendora-form" method="post" action="' . esc_attr(admin_url('admin-ajax.php')) . '">'
+        return '<form class="sendora-form" method="post" action="' . esc_url(admin_url('admin-ajax.php')) . '">'
             . '<input type="hidden" name="action" value="sendora_form_submit">'
             . '<input type="hidden" name="sendora_nonce" value="' . $nonce . '">'
             . '<div class="sendora-form__field"><label>'
-            . esc_html__('Name', 'sendora')
+            . esc_html__('Nome', 'sendora')
             . '<input type="text" name="name" autocomplete="name"></label></div>'
             . '<div class="sendora-form__field"><label>'
-            . esc_html__('Phone', 'sendora')
+            . esc_html__('Telefone', 'sendora')
             . '<input type="tel" name="phone" autocomplete="tel" required></label></div>'
             . '<div class="sendora-form__field"><label>'
-            . esc_html__('Email', 'sendora')
+            . esc_html__('E-mail', 'sendora')
             . '<input type="email" name="email" autocomplete="email"></label></div>'
             . '<div class="sendora-form__field"><label>'
-            . esc_html__('Message', 'sendora')
+            . esc_html__('Mensagem', 'sendora')
             . '<textarea name="message" rows="4"></textarea></label></div>'
             . '<div class="sendora-form__honeypot" aria-hidden="true">'
             . '<label>Website<input type="text" name="website" tabindex="-1" autocomplete="off"></label>'
             . '</div>'
-            . '<button type="submit">' . esc_html__('Send', 'sendora') . '</button>'
+            . '<button type="submit">' . esc_html__('Enviar', 'sendora') . '</button>'
             . '<div class="sendora-form__status" role="status" aria-live="polite"></div>'
             . '</form>';
     }
@@ -52,12 +61,15 @@ final class Sendora_Forms
         if (check_ajax_referer(self::NONCE_ACTION, 'sendora_nonce', false) === false) {
             wp_send_json([
                 'ok' => false,
-                'error' => __('Invalid form token.', 'sendora'),
+                'error' => __('Token do formulário inválido.', 'sendora'),
             ], 403);
         }
 
-        $input = is_array($_POST) ? wp_unslash($_POST) : [];
-        $ip = (string) ($_SERVER['REMOTE_ADDR'] ?? '');
+        // Nonce verified above via check_ajax_referer.
+        $input = isset($_POST) && is_array($_POST) ? wp_unslash($_POST) : [];
+        $ip = isset($_SERVER['REMOTE_ADDR'])
+            ? sanitize_text_field(wp_unslash((string) $_SERVER['REMOTE_ADDR']))
+            : '';
         $result = self::handle_submission($input, $ip);
 
         wp_send_json($result, !empty($result['ok']) ? 200 : 400);
@@ -72,7 +84,7 @@ final class Sendora_Forms
         if (trim((string) ($input['website'] ?? '')) !== '') {
             return [
                 'ok' => true,
-                'message' => __('Thank you. Your message was sent.', 'sendora'),
+                'message' => __('Obrigado. Sua mensagem foi enviada.', 'sendora'),
             ];
         }
 
@@ -81,7 +93,7 @@ final class Sendora_Forms
 
             return [
                 'ok' => false,
-                'error' => __('Too many submissions. Please try again later.', 'sendora'),
+                'error' => __('Muitos envios. Tente novamente em alguns minutos.', 'sendora'),
             ];
         }
 
@@ -99,7 +111,7 @@ final class Sendora_Forms
 
             return [
                 'ok' => false,
-                'error' => __('Unable to submit the form. Please try again.', 'sendora'),
+                'error' => __('Não foi possível enviar o formulário. Tente novamente.', 'sendora'),
             ];
         }
 
@@ -117,7 +129,7 @@ final class Sendora_Forms
 
                 return [
                     'ok' => false,
-                    'error' => __('Contact saved, but the automation could not be started.', 'sendora'),
+                    'error' => __('Contato salvo, mas a automação não pôde ser iniciada.', 'sendora'),
                 ];
             }
         }
@@ -128,7 +140,7 @@ final class Sendora_Forms
 
         return [
             'ok' => true,
-            'message' => __('Thank you. Your message was sent.', 'sendora'),
+            'message' => __('Obrigado. Sua mensagem foi enviada.', 'sendora'),
         ];
     }
 
@@ -141,7 +153,7 @@ final class Sendora_Forms
         $phone = trim((string) ($input['phone'] ?? ''));
 
         if ($phone === '') {
-            return ['ok' => false, 'error' => __('Phone is required.', 'sendora')];
+            return ['ok' => false, 'error' => __('O telefone é obrigatório.', 'sendora')];
         }
 
         $settings = Sendora_Settings::get_settings();
@@ -182,6 +194,16 @@ final class Sendora_Forms
             [],
             SENDORA_VERSION,
             true
+        );
+        wp_localize_script(
+            'sendora-form',
+            'SendoraForm',
+            [
+                'i18n' => [
+                    'error' => __('Não foi possível enviar o formulário.', 'sendora'),
+                    'success' => __('Obrigado. Sua mensagem foi enviada.', 'sendora'),
+                ],
+            ]
         );
     }
 

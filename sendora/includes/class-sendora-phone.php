@@ -1,6 +1,15 @@
 <?php
+/**
+ * Phone number normalization helpers.
+ *
+ * @package Sendora
+ */
 
 declare(strict_types=1);
+
+if (!defined('ABSPATH')) {
+    exit;
+}
 
 final class Sendora_Phone
 {

@@ -1,10 +1,10 @@
 === Sendora ===
 Contributors: sendora
-Tags: crm, automation, messaging, whatsapp, woocommerce, contact-form-7
+Tags: crm, automation, messaging, woocommerce, contact-form-7
 Requires at least: 6.2
-Tested up to: 6.7
+Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 0.1.0
+Stable tag: 0.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -14,14 +14,16 @@ Connect WordPress to Sendora with an API key: capture leads, embed the official 
 
 Sendora connects your WordPress site to your Sendora account using a server-side API key (`sk_…`). Data flows **from WordPress to Sendora only** in this version—no inbound webhooks or OAuth.
 
-**Features (v1)**
+**Features (v0.2)**
 
-* **Connection** — HTTPS API base URL, masked API key storage, and an admin connection test.
-* **Lead capture** — Shortcode `[sendora_form]` upserts contacts and can trigger a default flow.
-* **Contact Form 7** — Map each form’s name, phone, and email tags to Sendora fields after mail is sent.
-* **Chat widget** — Enable the official Sendora public embed with your Widget ID.
-* **WooCommerce** — On order created, payment complete, or cancellation (configurable): upsert billing contact, trigger flows, or send messages.
-* **Local logs** — Admin log table for form, CF7, and Woo sync attempts (no full API key stored).
+* **SaaS admin UI** — Dashboard, Conexão, Formulários, Widget, WooCommerce, Automações (preview), Configurações, Logs.
+* **Connection** — Masked API key, connection test, disconnect, workspace status from `/api/me`.
+* **Lead capture** — Shortcode `[sendora_form]` upserts contacts and can trigger a flow.
+* **Contact Form 7** — Map name, phone, and email tags (loaded reliably on `plugins_loaded`).
+* **Chat widget** — Official Sendora embed with page targeting.
+* **WooCommerce** — Order created / paid / cancelled sync with retry.
+* **Event bus** — Internal `Sendora_Events` foundation for automations.
+* **Local logs** — Admin log table (API keys redacted).
 
 **Recommended API key scopes**
 
@@ -69,14 +71,22 @@ No. The shortcode and widget work without them. CF7 mapping and Woo order sync l
 
 Digits are normalized with your configured default country code (e.g. Brazil `55`) before upsert.
 
-== Screenshots ==
+== Privacy ==
 
-1. Sendora settings: connection, forms, widget, and WooCommerce options.
+This plugin sends contact and order data to the Sendora API only after an administrator saves an API key and enables the relevant features.
+
+* **API key** — Stored in the WordPress database (`sendora_settings`) with autoload disabled. Never printed in full in the admin UI (last four characters only) and never exposed to visitors.
+* **Forms / Contact Form 7 / WooCommerce** — Name, phone, email, and related order metadata are posted over HTTPS to the configured API base URL (default `https://api.sendora.com.br`).
+* **Chat widget** — Off by default. When enabled, the official Sendora embed script is loaded from your API base URL (`/public/widget/embed`) so visitors can chat. This is the Sendora SaaS widget, not a third-party CDN.
+* **Logs** — Local table `{prefix}sendora_logs` stores sync status messages. API keys are redacted. Logs and settings are removed on uninstall.
+
+No analytics or telemetry is sent to Sendora without an administrator configuring the connection.
 
 == Changelog ==
 
 = 0.1.0 =
 * Initial release: API connection, `[sendora_form]`, Contact Form 7 mapping, official widget embed, WooCommerce order sync, local admin logs.
+* Hardened for WordPress.org review: prepared SQL, output escaping, nonces/capabilities, HTTPS-only API calls, uninstall cleanup, HPOS declaration.
 
 == Upgrade Notice ==
 

@@ -1,6 +1,15 @@
 <?php
+/**
+ * Thin HTTPS client for the Sendora Public API.
+ *
+ * @package Sendora
+ */
 
 declare(strict_types=1);
+
+if (!defined('ABSPATH')) {
+    exit;
+}
 
 final class Sendora_Api_Client
 {
@@ -31,9 +40,39 @@ final class Sendora_Api_Client
      */
     public function request(string $method, string $path, ?array $body = null): array
     {
+        if (!$this->is_https_base()) {
+            return [
+                'ok' => false,
+                'status' => 0,
+                'data' => null,
+                'error' => __('A URL da API da Sendora deve usar HTTPS.', 'sendora'),
+            ];
+        }
+
+        if ($this->api_key === '') {
+            return [
+                'ok' => false,
+                'status' => 0,
+                'data' => null,
+                'error' => __('A chave de API da Sendora não está configurada.', 'sendora'),
+            ];
+        }
+
+        $path = '/' . ltrim($path, '/');
+        if (!self::is_safe_api_path($path)) {
+            return [
+                'ok' => false,
+                'status' => 0,
+                'data' => null,
+                'error' => __('Caminho da API da Sendora inválido.', 'sendora'),
+            ];
+        }
+
         $arguments = [
             'method' => strtoupper($method),
             'timeout' => 15,
+            'redirection' => 0,
+            'sslverify' => true,
             'headers' => [
                 'Accept' => 'application/json',
                 'Authorization' => 'Bearer ' . $this->api_key,
@@ -45,10 +84,7 @@ final class Sendora_Api_Client
             $arguments['body'] = wp_json_encode($body);
         }
 
-        $response = wp_remote_request(
-            $this->base_url . '/' . ltrim($path, '/'),
-            $arguments
-        );
+        $response = wp_remote_request($this->base_url . $path, $arguments);
 
         if (is_wp_error($response)) {
             $error = $response->get_error_message();
@@ -58,11 +94,11 @@ final class Sendora_Api_Client
                 'ok' => false,
                 'status' => 0,
                 'data' => null,
-                'error' => $error,
+                'error' => $this->redact_secrets($error),
             ];
         }
 
-        $status = wp_remote_retrieve_response_code($response);
+        $status = (int) wp_remote_retrieve_response_code($response);
         $raw_body = wp_remote_retrieve_body($response);
         $data = $this->decode_body($raw_body);
         $ok = $status >= 200 && $status < 300;
@@ -75,7 +111,7 @@ final class Sendora_Api_Client
                 'ok' => false,
                 'status' => $status,
                 'data' => $data,
-                'error' => $error,
+                'error' => $this->redact_secrets($error),
             ];
         }
 
@@ -97,11 +133,31 @@ final class Sendora_Api_Client
         return $this->request('GET', '/api/flows');
     }
 
+    /**
+     * Lightweight auth check (does not require flows:write).
+     *
+     * @return array{ok: bool, status: int, data: mixed, error: ?string}
+     */
+    public function get_me(): array
+    {
+        return $this->request('GET', '/api/me');
+    }
+
     public function trigger_flow(
         string $flow_id,
         string $phone,
         ?string $message = null
     ): array {
+        $flow_id = sanitize_text_field($flow_id);
+        if ($flow_id === '' || !preg_match('/^[A-Za-z0-9_-]+$/', $flow_id)) {
+            return [
+                'ok' => false,
+                'status' => 0,
+                'data' => null,
+                'error' => __('ID de fluxo inválido.', 'sendora'),
+            ];
+        }
+
         $body = ['phone' => $phone];
 
         if ($message !== null) {
@@ -125,20 +181,54 @@ final class Sendora_Api_Client
      */
     public function test_connection(): array
     {
-        $result = $this->list_flows();
+        $result = $this->get_me();
 
         if ($result['ok']) {
-            return ['ok' => true, 'message' => 'Connected to Sendora.'];
+            return ['ok' => true, 'message' => __('Conectado à Sendora.', 'sendora')];
+        }
+
+        // Fallback for older keys/scopes that can list flows but not /api/me.
+        if (in_array($result['status'], [401, 403, 404], true)) {
+            $flows = $this->list_flows();
+            if ($flows['ok']) {
+                return ['ok' => true, 'message' => __('Conectado à Sendora.', 'sendora')];
+            }
+            if (in_array($flows['status'], [401, 403], true)) {
+                return ['ok' => false, 'message' => __('Chave de API inválida.', 'sendora')];
+            }
+
+            return [
+                'ok' => false,
+                'message' => $flows['error'] ?? __('Não foi possível conectar à Sendora.', 'sendora'),
+            ];
         }
 
         if (in_array($result['status'], [401, 403], true)) {
-            return ['ok' => false, 'message' => 'Invalid API key.'];
+            return ['ok' => false, 'message' => __('Chave de API inválida.', 'sendora')];
         }
 
         return [
             'ok' => false,
-            'message' => $result['error'] ?? 'Unable to connect to Sendora.',
+            'message' => $result['error'] ?? __('Não foi possível conectar à Sendora.', 'sendora'),
         ];
+    }
+
+    private function is_https_base(): bool
+    {
+        $parts = wp_parse_url($this->base_url);
+
+        return is_array($parts)
+            && ($parts['scheme'] ?? '') === 'https'
+            && !empty($parts['host']);
+    }
+
+    private static function is_safe_api_path(string $path): bool
+    {
+        if ($path === '' || str_contains($path, '..') || str_contains($path, '\\')) {
+            return false;
+        }
+
+        return (bool) preg_match('#^/api/[A-Za-z0-9/_-]+$#', $path);
     }
 
     private function decode_body(string $body): mixed
@@ -157,16 +247,20 @@ final class Sendora_Api_Client
         if (is_array($data)) {
             foreach (['message', 'error'] as $key) {
                 if (isset($data[$key]) && is_string($data[$key])) {
-                    return $data[$key];
+                    return wp_strip_all_tags($data[$key]);
                 }
             }
         }
 
         if (is_string($data) && $data !== '') {
-            return $data;
+            return wp_strip_all_tags($data);
         }
 
-        return 'Sendora API request failed with HTTP ' . $status . '.';
+        return sprintf(
+            /* translators: %d: HTTP status code from the Sendora API. */
+            __('A requisição à API da Sendora falhou com HTTP %d.', 'sendora'),
+            $status
+        );
     }
 
     private function log_request_failure(
@@ -189,8 +283,11 @@ final class Sendora_Api_Client
 
         if ($data !== null) {
             $context['response'] = $this->truncate_for_log(
-                is_string($data) ? $data : wp_json_encode($data)
+                is_string($data) ? $data : (string) wp_json_encode($data)
             );
+            if (is_string($context['response'])) {
+                $context['response'] = $this->redact_secrets($context['response']);
+            }
         }
 
         Sendora_Logger::log('api', 'error', $message, $context);
@@ -198,11 +295,13 @@ final class Sendora_Api_Client
 
     private function redact_secrets(string $text): string
     {
-        if ($this->api_key === '') {
-            return $text;
+        $text = preg_replace('/\bsk_[A-Za-z0-9_-]+\b/', '[redacted]', $text) ?? $text;
+
+        if ($this->api_key !== '') {
+            $text = str_replace($this->api_key, '[redacted]', $text);
         }
 
-        return str_replace($this->api_key, '[redacted]', $text);
+        return $text;
     }
 
     private function truncate_for_log(?string $value, int $max = 512): ?string

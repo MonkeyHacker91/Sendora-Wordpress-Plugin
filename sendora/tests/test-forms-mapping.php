@@ -29,7 +29,7 @@ abstract class SendoraFormsMappingTest extends SendoraLoggerTest
         ]);
 
         $this->assertFalse($result['ok']);
-        $this->assertSame('Phone is required.', $result['error']);
+        $this->assertSame('O telefone é obrigatório.', $result['error']);
     }
 
     public function test_submission_maps_and_sanitizes_contact_fields(): void
@@ -148,7 +148,7 @@ abstract class SendoraFormsMappingTest extends SendoraLoggerTest
         );
 
         $this->assertFalse($result['ok']);
-        $this->assertSame('Too many submissions. Please try again later.', $result['error']);
+        $this->assertSame('Muitos envios. Tente novamente em alguns minutos.', $result['error']);
     }
 
     public function test_ajax_rejects_invalid_nonce_before_api_call(): void
@@ -167,7 +167,7 @@ abstract class SendoraFormsMappingTest extends SendoraLoggerTest
         }
 
         $this->assertFalse($GLOBALS['sendora_test_json_response']['ok']);
-        $this->assertSame('Invalid form token.', $GLOBALS['sendora_test_json_response']['error']);
+        $this->assertSame('Token do formulário inválido.', $GLOBALS['sendora_test_json_response']['error']);
     }
 
     public function test_ajax_accepts_nonce_from_previous_tick(): void

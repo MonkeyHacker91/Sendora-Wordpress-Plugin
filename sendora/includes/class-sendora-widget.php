@@ -1,63 +1,137 @@
 <?php
+/**
+ * Official Sendora chat widget embed (opt-in).
+ *
+ * @package Sendora
+ */
 
 declare(strict_types=1);
 
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 final class Sendora_Widget
 {
+    private const UUID_PATTERN =
+        '/[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/i';
+
     public function run(): void
     {
-        add_action('wp_footer', [self::class, 'render_embed'], 20);
+        add_action('wp_enqueue_scripts', [self::class, 'enqueue_embed'], 20);
     }
 
-    public static function render_embed(): void
+    public static function enqueue_embed(): void
     {
+        if (is_admin() || is_feed() || is_preview()) {
+            return;
+        }
+
         $settings = Sendora_Settings::get_settings();
 
         if (empty($settings['widget_enabled'])) {
             return;
         }
 
-        $widget_id = trim((string) ($settings['widget_id'] ?? ''));
+        if (!self::should_display($settings)) {
+            return;
+        }
+
+        $widget_id = self::sanitize_widget_id((string) ($settings['widget_id'] ?? ''));
         if ($widget_id === '') {
             return;
         }
 
         $api_base = rtrim((string) ($settings['api_base'] ?? ''), '/');
-        if ($api_base === '') {
+        if ($api_base === '' || !self::is_https_url($api_base)) {
             return;
         }
 
-        $script_url = add_query_arg(
-            [
-                'id' => $widget_id,
-                'v' => '6',
-            ],
-            $api_base . '/public/widget/embed'
+        // esc_url_raw keeps a real "&" for the query string. esc_url() would emit
+        // &#038; which breaks when the URL is used as a script src / in JS.
+        $script_url = esc_url_raw(
+            add_query_arg(
+                [
+                    'id' => $widget_id,
+                    'v' => '6',
+                ],
+                $api_base . '/public/widget/embed'
+            )
         );
-
-        $script_url = esc_url($script_url);
         if ($script_url === '') {
             return;
         }
 
-        $encoded_url = wp_json_encode($script_url);
-        if ($encoded_url === false) {
-            return;
+        // Enqueue the official embed directly. Do not set window.__sendora_widget
+        // here — the embed script uses that flag as its own boot guard.
+        wp_enqueue_script(
+            'sendora-widget',
+            $script_url,
+            [],
+            null,
+            true
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $settings
+     */
+    public static function should_display(array $settings): bool
+    {
+        $mode = (string) ($settings['widget_display'] ?? 'all');
+        if ($mode !== 'specific') {
+            return true;
         }
 
-        echo "<!-- Sendora Chat Widget -->\n";
-        echo "<script>\n";
-        echo "(function(w,d,u){\n";
-        echo "  function load(){\n";
-        echo "    if(w.__sendora_widget)return;\n";
-        echo "    var s=d.createElement(\"script\");\n";
-        echo "    s.src=u;\n";
-        echo "    s.async=true;\n";
-        echo "    (d.head||d.body).appendChild(s);\n";
-        echo "  }\n";
-        echo "  if(d.readyState===\"loading\"){d.addEventListener(\"DOMContentLoaded\",load);}\n";
-        echo "  else{load();}\n";
-        echo '})(window,document,' . $encoded_url . ");\n";
-        echo "</script>\n";
+        $page_ids = $settings['widget_page_ids'] ?? [];
+        if (!is_array($page_ids) || $page_ids === []) {
+            return false;
+        }
+
+        $page_ids = array_map('intval', $page_ids);
+
+        if (!is_page()) {
+            return false;
+        }
+
+        $current_id = (int) get_queried_object_id();
+
+        return $current_id > 0 && in_array($current_id, $page_ids, true);
+    }
+
+    /**
+     * @deprecated Kept for tests and explicit calls; prefer enqueue_embed.
+     */
+    public static function render_embed(): void
+    {
+        self::enqueue_embed();
+    }
+
+    /**
+     * Accept a bare UUID, or a pasted embed URL / query like
+     * `8ab2…d4c3&v=6` or `…/embed?id=UUID&v=6`.
+     */
+    public static function sanitize_widget_id(string $widget_id): string
+    {
+        $widget_id = trim(wp_unslash($widget_id));
+        $widget_id = sanitize_text_field($widget_id);
+        if ($widget_id === '') {
+            return '';
+        }
+
+        if (preg_match(self::UUID_PATTERN, $widget_id, $matches)) {
+            return strtolower($matches[0]);
+        }
+
+        return '';
+    }
+
+    private static function is_https_url(string $url): bool
+    {
+        $parts = wp_parse_url($url);
+
+        return is_array($parts)
+            && ($parts['scheme'] ?? '') === 'https'
+            && !empty($parts['host']);
     }
 }

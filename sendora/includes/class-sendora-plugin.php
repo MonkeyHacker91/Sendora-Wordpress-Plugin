@@ -1,6 +1,15 @@
 <?php
+/**
+ * Plugin bootstrap / service wiring.
+ *
+ * @package Sendora
+ */
 
 declare(strict_types=1);
+
+if (!defined('ABSPATH')) {
+    exit;
+}
 
 final class Sendora_Plugin
 {
@@ -18,9 +27,11 @@ final class Sendora_Plugin
     public function run(): void
     {
         (new Sendora_Settings())->run();
+        (new Sendora_Admin())->run();
+        Sendora_Events::register_hooks();
         (new Sendora_Forms())->run();
         (new Sendora_Widget())->run();
-        if (defined('WPCF7_VERSION') && class_exists('Sendora_CF7')) {
+        if ((defined('WPCF7_VERSION') || class_exists('WPCF7_ContactForm')) && class_exists('Sendora_CF7')) {
             (new Sendora_CF7())->run();
         }
         if (

@@ -1,6 +1,15 @@
 <?php
+/**
+ * WooCommerce order sync to Sendora.
+ *
+ * @package Sendora
+ */
 
 declare(strict_types=1);
+
+if (!defined('ABSPATH')) {
+    exit;
+}
 
 final class Sendora_WooCommerce
 {
@@ -10,9 +19,22 @@ final class Sendora_WooCommerce
     public function run(): void
     {
         add_action('woocommerce_checkout_order_processed', [self::class, 'order_created']);
+        add_action('woocommerce_store_api_checkout_order_processed', [self::class, 'order_created_from_object']);
         add_action('woocommerce_payment_complete', [self::class, 'payment_complete']);
         add_action('woocommerce_order_status_cancelled', [self::class, 'order_cancelled']);
-        add_action(self::RETRY_HOOK, [self::class, 'retry_sync']);
+        add_action(self::RETRY_HOOK, [self::class, 'retry_sync'], 10, 3);
+    }
+
+    /**
+     * Block / Store API checkout passes a WC_Order instance.
+     */
+    public static function order_created_from_object(object $order): void
+    {
+        if (!method_exists($order, 'get_id')) {
+            return;
+        }
+
+        self::order_created((int) $order->get_id());
     }
 
     /**
@@ -192,7 +214,8 @@ final class Sendora_WooCommerce
             return $client->send_message([
                 'phone' => $phone,
                 'message' => sprintf(
-                    __('Payment received for order #%s.', 'sendora'),
+                    /* translators: %s: número do pedido WooCommerce. */
+                    __('Pagamento recebido do pedido #%s.', 'sendora'),
                     (string) $order->get_order_number()
                 ),
             ]);
@@ -208,9 +231,10 @@ final class Sendora_WooCommerce
         string $error,
         int $status = 0
     ): void {
-        $order->update_meta_data('_sendora_last_error', $error);
+        $safe_error = wp_strip_all_tags($error);
+        $order->update_meta_data('_sendora_last_error', $safe_error);
         $order->save();
-        self::log_failure($error, (int) $order->get_id(), $status);
+        self::log_failure($safe_error, (int) $order->get_id(), $status);
 
         if ($attempt < self::MAX_RETRIES) {
             self::schedule_retry((int) $order->get_id(), $event, $attempt + 1);
@@ -220,8 +244,9 @@ final class Sendora_WooCommerce
 
         $order->add_order_note(
             sprintf(
-                __('Sendora sync failed after retries: %s', 'sendora'),
-                $error
+                /* translators: %s: mensagem de erro sanitizada da API Sendora. */
+                __('Falha na sincronização Sendora após novas tentativas: %s', 'sendora'),
+                $safe_error
             )
         );
     }

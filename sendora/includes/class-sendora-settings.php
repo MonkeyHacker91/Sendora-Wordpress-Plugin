@@ -1,44 +1,31 @@
 <?php
+/**
+ * Admin settings, sanitization, and connection test.
+ *
+ * @package Sendora
+ */
 
 declare(strict_types=1);
+
+if (!defined('ABSPATH')) {
+    exit;
+}
 
 final class Sendora_Settings
 {
     public const OPTION_KEY = 'sendora_settings';
 
+    public const DEFAULT_API_BASE = 'https://api.sendora.com.br';
+
     private const PAGE_SLUG = 'sendora';
     private const LOGS_PAGE_SLUG = 'sendora-logs';
     private const SETTINGS_GROUP = 'sendora_settings_group';
-    private const DEFAULT_API_BASE = 'https://api.sendora.com.br';
 
     public function run(): void
     {
-        add_action('admin_menu', [$this, 'register_menu']);
         add_action('admin_init', [$this, 'register_settings']);
-        add_action('admin_enqueue_scripts', [$this, 'enqueue_assets']);
-        add_action('wp_ajax_sendora_test_connection', [self::class, 'ajax_test_connection']);
-    }
-
-    public function register_menu(): void
-    {
-        add_menu_page(
-            __('Sendora', 'sendora'),
-            __('Sendora', 'sendora'),
-            'manage_options',
-            self::PAGE_SLUG,
-            [$this, 'render_page'],
-            'dashicons-format-chat',
-            58
-        );
-
-        add_submenu_page(
-            self::PAGE_SLUG,
-            __('Sendora logs', 'sendora'),
-            __('Logs', 'sendora'),
-            'manage_options',
-            self::LOGS_PAGE_SLUG,
-            [$this, 'render_logs_page']
-        );
+        add_action('update_option_' . self::OPTION_KEY, [self::class, 'force_option_no_autoload'], 10, 0);
+        add_action('add_option_' . self::OPTION_KEY, [self::class, 'force_option_no_autoload'], 10, 0);
     }
 
     public function register_settings(): void
@@ -50,76 +37,9 @@ final class Sendora_Settings
                 'type' => 'array',
                 'sanitize_callback' => [self::class, 'sanitize'],
                 'default' => self::defaults(),
+                'show_in_rest' => false,
             ]
         );
-    }
-
-    public function enqueue_assets(string $hook_suffix): void
-    {
-        $allowed = [
-            'toplevel_page_' . self::PAGE_SLUG,
-            'sendora_page_' . self::LOGS_PAGE_SLUG,
-        ];
-        if (!in_array($hook_suffix, $allowed, true)) {
-            return;
-        }
-
-        wp_enqueue_style(
-            'sendora-admin',
-            plugins_url('admin/css/admin.css', SENDORA_PLUGIN_FILE),
-            [],
-            SENDORA_VERSION
-        );
-        wp_enqueue_script(
-            'sendora-admin',
-            plugins_url('admin/js/admin.js', SENDORA_PLUGIN_FILE),
-            [],
-            SENDORA_VERSION,
-            true
-        );
-        wp_localize_script(
-            'sendora-admin',
-            'SendoraAdmin',
-            [
-                'ajaxUrl' => admin_url('admin-ajax.php'),
-                'nonce' => wp_create_nonce('sendora_test_connection'),
-            ]
-        );
-    }
-
-    public function render_page(): void
-    {
-        if (!current_user_can('manage_options')) {
-            wp_die(esc_html__('You are not allowed to manage Sendora settings.', 'sendora'));
-        }
-
-        $settings = self::get_settings();
-        $flows = $this->load_flows($settings);
-        $cf7_forms = class_exists('Sendora_CF7') ? Sendora_CF7::list_forms() : [];
-        $masked_api_key = self::mask_api_key($settings['api_key']);
-
-        require SENDORA_PLUGIN_DIR . 'admin/views/settings.php';
-    }
-
-    public function render_logs_page(): void
-    {
-        if (!current_user_can('manage_options')) {
-            wp_die(esc_html__('You are not allowed to view Sendora logs.', 'sendora'));
-        }
-
-        $cleared = false;
-
-        if (
-            isset($_POST['sendora_clear_logs'])
-            && check_admin_referer('sendora_clear_logs')
-        ) {
-            Sendora_Logger::clear();
-            $cleared = true;
-        }
-
-        $logs = Sendora_Logger::list(100);
-
-        require SENDORA_PLUGIN_DIR . 'admin/views/logs.php';
     }
 
     /**
@@ -132,16 +52,8 @@ final class Sendora_Settings
         $saved = self::get_settings();
         $settings = self::defaults();
 
-        $api_base = rtrim(esc_url_raw((string) ($input['api_base'] ?? '')), '/');
-        if (!self::is_https_url($api_base)) {
-            add_settings_error(
-                self::OPTION_KEY,
-                'sendora_api_base_https',
-                __('The Sendora API base URL must use HTTPS.', 'sendora')
-            );
-            $api_base = $saved['api_base'];
-        }
-        $settings['api_base'] = $api_base;
+        // API base is fixed to the official Sendora endpoint (not user-configurable).
+        $settings['api_base'] = self::DEFAULT_API_BASE;
 
         $api_key = trim(sanitize_text_field((string) ($input['api_key'] ?? '')));
         if ($api_key === '') {
@@ -150,15 +62,95 @@ final class Sendora_Settings
             add_settings_error(
                 self::OPTION_KEY,
                 'sendora_api_key_prefix',
-                __('The Sendora API key must start with sk_.', 'sendora')
+                __('A chave de API da Sendora deve começar com sk_.', 'sendora')
             );
             $settings['api_key'] = $saved['api_key'];
         } else {
             $settings['api_key'] = $api_key;
         }
 
-        foreach (['widget_id', 'default_flow_id', 'woo_paid_flow_id'] as $field) {
-            $settings[$field] = sanitize_text_field((string) ($input[$field] ?? ''));
+        // Partial save from Conexão page — only touch the API key.
+        if (($input['_partial'] ?? '') === 'connection') {
+            $saved['api_key'] = $settings['api_key'];
+            $saved['api_base'] = self::DEFAULT_API_BASE;
+
+            return $saved;
+        }
+
+        if (($input['_partial'] ?? '') === 'forms') {
+            foreach (['default_flow_id'] as $field) {
+                $value = sanitize_text_field((string) ($input[$field] ?? ''));
+                $saved[$field] = preg_match('/^[A-Za-z0-9_-]*$/', $value) ? $value : '';
+            }
+            $saved['default_cc'] = preg_replace(
+                '/\D+/',
+                '',
+                sanitize_text_field((string) ($input['default_cc'] ?? '55'))
+            ) ?: '55';
+            $saved['cf7_mappings'] = array_key_exists('cf7_mappings', $input)
+                ? self::sanitize_cf7_mappings($input['cf7_mappings'])
+                : (is_array($saved['cf7_mappings'] ?? null) ? $saved['cf7_mappings'] : []);
+            $saved['api_base'] = self::DEFAULT_API_BASE;
+
+            return $saved;
+        }
+
+        if (($input['_partial'] ?? '') === 'widget') {
+            $saved['widget_id'] = class_exists('Sendora_Widget')
+                ? Sendora_Widget::sanitize_widget_id((string) ($input['widget_id'] ?? ''))
+                : sanitize_text_field((string) ($input['widget_id'] ?? ''));
+            $display = sanitize_text_field((string) ($input['widget_display'] ?? 'all'));
+            $saved['widget_display'] = in_array($display, ['all', 'specific'], true) ? $display : 'all';
+            $saved['widget_page_ids'] = self::sanitize_page_ids($input['widget_page_ids'] ?? []);
+            $saved['widget_enabled'] = isset($input['widget_enabled']) && (string) $input['widget_enabled'] === '1';
+            $saved['api_base'] = self::DEFAULT_API_BASE;
+
+            return $saved;
+        }
+
+        if (($input['_partial'] ?? '') === 'woo') {
+            foreach (['woo_paid_flow_id'] as $field) {
+                $value = sanitize_text_field((string) ($input[$field] ?? ''));
+                $saved[$field] = preg_match('/^[A-Za-z0-9_-]*$/', $value) ? $value : '';
+            }
+            foreach (['woo_on_paid', 'woo_on_cancelled'] as $field) {
+                $saved[$field] = isset($input[$field]) && (string) $input[$field] === '1';
+            }
+            $paid_mode = sanitize_text_field((string) ($input['woo_paid_mode'] ?? 'off'));
+            $saved['woo_paid_mode'] = in_array($paid_mode, ['flow', 'message', 'off'], true) ? $paid_mode : 'off';
+            $created_mode = sanitize_text_field((string) ($input['woo_created_mode'] ?? 'off'));
+            $saved['woo_created_mode'] = in_array(
+                $created_mode,
+                ['contact_only', 'contact_and_flow', 'off'],
+                true
+            ) ? $created_mode : 'off';
+            $saved['api_base'] = self::DEFAULT_API_BASE;
+
+            return $saved;
+        }
+
+        if (($input['_partial'] ?? '') === 'general') {
+            $saved['default_cc'] = preg_replace(
+                '/\D+/',
+                '',
+                sanitize_text_field((string) ($input['default_cc'] ?? '55'))
+            ) ?: '55';
+            $saved['api_base'] = self::DEFAULT_API_BASE;
+
+            return $saved;
+        }
+
+        $settings['widget_id'] = class_exists('Sendora_Widget')
+            ? Sendora_Widget::sanitize_widget_id((string) ($input['widget_id'] ?? ''))
+            : sanitize_text_field((string) ($input['widget_id'] ?? ''));
+
+        $display = sanitize_text_field((string) ($input['widget_display'] ?? 'all'));
+        $settings['widget_display'] = in_array($display, ['all', 'specific'], true) ? $display : 'all';
+        $settings['widget_page_ids'] = self::sanitize_page_ids($input['widget_page_ids'] ?? []);
+
+        foreach (['default_flow_id', 'woo_paid_flow_id'] as $field) {
+            $value = sanitize_text_field((string) ($input[$field] ?? ''));
+            $settings[$field] = preg_match('/^[A-Za-z0-9_-]*$/', $value) ? $value : '';
         }
 
         $settings['default_cc'] = preg_replace(
@@ -201,7 +193,10 @@ final class Sendora_Settings
             $saved['woo_created_mode'] = 'contact_only';
         }
 
-        return array_merge(self::defaults(), $saved);
+        $merged = array_merge(self::defaults(), $saved);
+        $merged['api_base'] = self::DEFAULT_API_BASE;
+
+        return $merged;
     }
 
     public static function mask_api_key(string $api_key): string
@@ -213,29 +208,21 @@ final class Sendora_Settings
         return '••••••••' . substr($api_key, -4);
     }
 
-    public static function ajax_test_connection(): void
+    /**
+     * Keep the API key out of the autoloaded options cache.
+     */
+    public static function force_option_no_autoload(): void
     {
-        check_ajax_referer('sendora_test_connection', 'nonce');
+        global $wpdb;
 
-        if (!current_user_can('manage_options')) {
-            wp_send_json([
-                'ok' => false,
-                'message' => __('You are not allowed to test this connection.', 'sendora'),
-            ], 403);
-        }
-
-        $result = Sendora_Api_Client::from_options()->test_connection();
-        $api_key = self::get_settings()['api_key'];
-        $message = (string) ($result['message'] ?? __('Unable to connect to Sendora.', 'sendora'));
-
-        if ($api_key !== '') {
-            $message = str_replace($api_key, '[redacted]', $message);
-        }
-
-        wp_send_json([
-            'ok' => !empty($result['ok']),
-            'message' => $message,
-        ]);
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- intentional autoload flip for secret storage.
+        $wpdb->update(
+            $wpdb->options,
+            ['autoload' => 'no'],
+            ['option_name' => self::OPTION_KEY],
+            ['%s'],
+            ['%s']
+        );
     }
 
     /**
@@ -248,6 +235,8 @@ final class Sendora_Settings
             'api_key' => '',
             'widget_enabled' => false,
             'widget_id' => '',
+            'widget_display' => 'all',
+            'widget_page_ids' => [],
             'default_flow_id' => '',
             'default_cc' => '55',
             'woo_on_created' => false,
@@ -258,6 +247,93 @@ final class Sendora_Settings
             'woo_paid_mode' => 'off',
             'cf7_mappings' => [],
         ];
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    private static function sanitize_page_ids(mixed $input): array
+    {
+        if (!is_array($input)) {
+            return [];
+        }
+
+        $ids = [];
+        foreach ($input as $value) {
+            $id = absint($value);
+            if ($id > 0) {
+                $ids[] = $id;
+            }
+        }
+
+        $ids = array_values(array_unique($ids));
+        sort($ids);
+
+        return $ids;
+    }
+
+    /**
+     * @return array<int, array{id: int, title: string}>
+     */
+    public static function list_pages_for_widget(): array
+    {
+        $pages = get_pages(
+            [
+                'post_status' => 'publish',
+                'sort_column' => 'post_title',
+                'sort_order' => 'ASC',
+                'number' => 200,
+            ]
+        );
+
+        if (!is_array($pages)) {
+            return [];
+        }
+
+        $items = [];
+        foreach ($pages as $page) {
+            if (!is_object($page) || empty($page->ID)) {
+                continue;
+            }
+            $items[] = [
+                'id' => (int) $page->ID,
+                'title' => self::page_label_for_widget($page),
+            ];
+        }
+
+        return $items;
+    }
+
+    /**
+     * Human-readable page label for selects (never bare "#123" when a name exists).
+     */
+    public static function page_label_for_widget(object $page): string
+    {
+        $id = (int) ($page->ID ?? 0);
+        $title = trim(sanitize_text_field((string) ($page->post_title ?? '')));
+
+        if ($title === '' && function_exists('get_the_title') && $id > 0) {
+            $title = trim(sanitize_text_field((string) get_the_title($page)));
+        }
+
+        if ($title === '') {
+            $slug = trim((string) ($page->post_name ?? ''));
+            $slug = sanitize_title($slug);
+            // Ignore auto slugs like "3487" / "3487-2" — they are not real names.
+            if ($slug !== '' && !preg_match('/^\d+(-\d+)?$/', $slug)) {
+                $title = str_replace('-', ' ', $slug);
+            }
+        }
+
+        if ($title === '') {
+            $title = __('(sem título)', 'sendora');
+        }
+
+        if ($id > 0) {
+            return sprintf('%s (#%d)', $title, $id);
+        }
+
+        return $title;
     }
 
     /**
@@ -293,23 +369,19 @@ final class Sendora_Settings
         return $mappings;
     }
 
-    private static function is_https_url(string $url): bool
-    {
-        $parts = parse_url($url);
-
-        return is_array($parts)
-            && ($parts['scheme'] ?? '') === 'https'
-            && !empty($parts['host']);
-    }
-
     /**
      * @param array<string, mixed> $settings
      * @return array<int, array{id: string, name: string}>
      */
-    private function load_flows(array $settings): array
+    public static function load_flows_public(array $settings): array
     {
-        if ($settings['api_key'] === '') {
+        if (($settings['api_key'] ?? '') === '') {
             return [];
+        }
+
+        $cached = get_transient('sendora_flows_cache');
+        if (is_array($cached)) {
+            return $cached;
         }
 
         $result = Sendora_Api_Client::from_options()->list_flows();
@@ -327,11 +399,18 @@ final class Sendora_Settings
                 continue;
             }
 
+            $id = sanitize_text_field((string) $flow['id']);
+            if ($id === '' || !preg_match('/^[A-Za-z0-9_-]+$/', $id)) {
+                continue;
+            }
+
             $flows[] = [
-                'id' => sanitize_text_field((string) $flow['id']),
-                'name' => sanitize_text_field((string) ($flow['name'] ?? $flow['id'])),
+                'id' => $id,
+                'name' => sanitize_text_field((string) ($flow['name'] ?? $id)),
             ];
         }
+
+        set_transient('sendora_flows_cache', $flows, 5 * MINUTE_IN_SECONDS);
 
         return $flows;
     }

@@ -122,7 +122,25 @@ abstract class SendoraApiClientTest extends SendoraPhoneTest
 
         $result = Sendora_Api_Client::from_options()->test_connection();
 
-        $this->assertSame(['ok' => false, 'message' => 'Invalid API key.'], $result);
+        $this->assertSame(['ok' => false, 'message' => 'Chave de API inválida.'], $result);
+    }
+
+    public function test_request_rejects_non_https_base_url(): void
+    {
+        $client = new Sendora_Api_Client('http://api.sendora.com.br', 'sk_test_key');
+        $result = $client->request('GET', '/api/flows');
+
+        $this->assertFalse($result['ok']);
+        $this->assertSame('A URL da API da Sendora deve usar HTTPS.', $result['error']);
+    }
+
+    public function test_trigger_flow_rejects_unsafe_flow_id(): void
+    {
+        $result = Sendora_Api_Client::from_options()
+            ->trigger_flow('../etc/passwd', '5511999999999');
+
+        $this->assertFalse($result['ok']);
+        $this->assertSame('ID de fluxo inválido.', $result['error']);
     }
 
     private function response(int $status, mixed $body): array

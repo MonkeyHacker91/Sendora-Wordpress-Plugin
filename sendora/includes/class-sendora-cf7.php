@@ -1,6 +1,15 @@
 <?php
+/**
+ * Contact Form 7 bridge.
+ *
+ * @package Sendora
+ */
 
 declare(strict_types=1);
+
+if (!defined('ABSPATH')) {
+    exit;
+}
 
 final class Sendora_CF7
 {

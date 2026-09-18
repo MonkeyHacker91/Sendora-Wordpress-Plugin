@@ -12,6 +12,7 @@
 
         var button = form.querySelector('button[type="submit"]');
         var status = form.querySelector('.sendora-form__status');
+        var i18n = (typeof SendoraForm !== 'undefined' && SendoraForm.i18n) ? SendoraForm.i18n : {};
         form.classList.add('is-submitting');
 
         if (button) {
@@ -31,18 +32,18 @@
             var result = await response.json();
 
             if (!response.ok || !result.ok) {
-                throw new Error(result.error || 'Unable to submit the form.');
+                throw new Error(result.error || i18n.error || 'Não foi possível enviar o formulário.');
             }
 
             form.reset();
             if (status) {
-                status.textContent = result.message || 'Thank you. Your message was sent.';
+                status.textContent = result.message || i18n.success || 'Obrigado. Sua mensagem foi enviada.';
             }
         } catch (error) {
             if (status) {
                 status.textContent = error instanceof Error
                     ? error.message
-                    : 'Unable to submit the form.';
+                    : (i18n.error || 'Não foi possível enviar o formulário.');
             }
         } finally {
             form.classList.remove('is-submitting');
