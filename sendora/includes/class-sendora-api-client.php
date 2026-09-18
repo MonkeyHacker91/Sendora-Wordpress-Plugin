@@ -51,11 +51,14 @@ final class Sendora_Api_Client
         );
 
         if (is_wp_error($response)) {
+            $error = $response->get_error_message();
+            $this->log_request_failure($method, $path, 0, $error, null);
+
             return [
                 'ok' => false,
                 'status' => 0,
                 'data' => null,
-                'error' => $response->get_error_message(),
+                'error' => $error,
             ];
         }
 
@@ -64,11 +67,23 @@ final class Sendora_Api_Client
         $data = $this->decode_body($raw_body);
         $ok = $status >= 200 && $status < 300;
 
+        if (!$ok) {
+            $error = $this->extract_error($data, $status);
+            $this->log_request_failure($method, $path, $status, $error, $data);
+
+            return [
+                'ok' => false,
+                'status' => $status,
+                'data' => $data,
+                'error' => $error,
+            ];
+        }
+
         return [
-            'ok' => $ok,
+            'ok' => true,
             'status' => $status,
             'data' => $data,
-            'error' => $ok ? null : $this->extract_error($data, $status),
+            'error' => null,
         ];
     }
 
@@ -152,5 +167,54 @@ final class Sendora_Api_Client
         }
 
         return 'Sendora API request failed with HTTP ' . $status . '.';
+    }
+
+    private function log_request_failure(
+        string $method,
+        string $path,
+        int $status,
+        string $error,
+        mixed $data
+    ): void {
+        if (!class_exists('Sendora_Logger')) {
+            return;
+        }
+
+        $message = $this->redact_secrets($error);
+        $context = [
+            'method' => strtoupper($method),
+            'path' => $path,
+            'status' => $status,
+        ];
+
+        if ($data !== null) {
+            $context['response'] = $this->truncate_for_log(
+                is_string($data) ? $data : wp_json_encode($data)
+            );
+        }
+
+        Sendora_Logger::log('api', 'error', $message, $context);
+    }
+
+    private function redact_secrets(string $text): string
+    {
+        if ($this->api_key === '') {
+            return $text;
+        }
+
+        return str_replace($this->api_key, '[redacted]', $text);
+    }
+
+    private function truncate_for_log(?string $value, int $max = 512): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if (strlen($value) <= $max) {
+            return $value;
+        }
+
+        return substr($value, 0, $max) . '…';
     }
 }

@@ -105,6 +105,11 @@ abstract class SendoraApiClientTest extends SendoraPhoneTest
         $this->assertFalse($result['ok']);
         $this->assertSame(403, $result['status']);
         $this->assertSame('Invalid API key', $result['error']);
+
+        $logs = Sendora_Logger::list(1);
+        $this->assertNotEmpty($logs);
+        $this->assertSame('api', $logs[0]['source']);
+        $this->assertSame('Invalid API key', $logs[0]['message']);
     }
 
     public function test_connection_reports_invalid_key(): void

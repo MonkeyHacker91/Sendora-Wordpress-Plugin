@@ -7,6 +7,7 @@ final class Sendora_Settings
     public const OPTION_KEY = 'sendora_settings';
 
     private const PAGE_SLUG = 'sendora';
+    private const LOGS_PAGE_SLUG = 'sendora-logs';
     private const SETTINGS_GROUP = 'sendora_settings_group';
     private const DEFAULT_API_BASE = 'https://api.sendora.com.br';
 
@@ -29,6 +30,15 @@ final class Sendora_Settings
             'dashicons-format-chat',
             58
         );
+
+        add_submenu_page(
+            self::PAGE_SLUG,
+            __('Sendora logs', 'sendora'),
+            __('Logs', 'sendora'),
+            'manage_options',
+            self::LOGS_PAGE_SLUG,
+            [$this, 'render_logs_page']
+        );
     }
 
     public function register_settings(): void
@@ -46,7 +56,11 @@ final class Sendora_Settings
 
     public function enqueue_assets(string $hook_suffix): void
     {
-        if ($hook_suffix !== 'toplevel_page_' . self::PAGE_SLUG) {
+        $allowed = [
+            'toplevel_page_' . self::PAGE_SLUG,
+            'sendora_page_' . self::LOGS_PAGE_SLUG,
+        ];
+        if (!in_array($hook_suffix, $allowed, true)) {
             return;
         }
 
@@ -84,6 +98,27 @@ final class Sendora_Settings
         $masked_api_key = self::mask_api_key($settings['api_key']);
 
         require SENDORA_PLUGIN_DIR . 'admin/views/settings.php';
+    }
+
+    public function render_logs_page(): void
+    {
+        if (!current_user_can('manage_options')) {
+            wp_die(esc_html__('You are not allowed to view Sendora logs.', 'sendora'));
+        }
+
+        $cleared = false;
+
+        if (
+            isset($_POST['sendora_clear_logs'])
+            && check_admin_referer('sendora_clear_logs')
+        ) {
+            Sendora_Logger::clear();
+            $cleared = true;
+        }
+
+        $logs = Sendora_Logger::list(100);
+
+        require SENDORA_PLUGIN_DIR . 'admin/views/logs.php';
     }
 
     /**

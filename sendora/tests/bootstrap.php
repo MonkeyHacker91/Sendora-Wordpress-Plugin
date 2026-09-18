@@ -8,6 +8,8 @@ $GLOBALS['sendora_test_actions'] = [];
 $GLOBALS['sendora_test_registered_settings'] = [];
 $GLOBALS['sendora_test_settings_errors'] = [];
 $GLOBALS['sendora_test_json_response'] = null;
+$GLOBALS['sendora_test_logs'] = [];
+$GLOBALS['sendora_test_log_id'] = 0;
 
 if (!function_exists('get_option')) {
     function get_option(string $option, mixed $default = false): mixed
@@ -128,6 +130,105 @@ if (!function_exists('wp_send_json')) {
     }
 }
 
+if (!isset($GLOBALS['wpdb'])) {
+    $GLOBALS['wpdb'] = new class {
+        public string $prefix = 'wp_';
+
+        public function insert(string $table, array $data, array $format = []): int
+        {
+            $GLOBALS['sendora_test_log_id']++;
+            $GLOBALS['sendora_test_logs'][$GLOBALS['sendora_test_log_id']] = [
+                'id' => $GLOBALS['sendora_test_log_id'],
+                'created_at' => (string) ($data['created_at'] ?? ''),
+                'source' => (string) ($data['source'] ?? ''),
+                'level' => (string) ($data['level'] ?? ''),
+                'message' => (string) ($data['message'] ?? ''),
+                'context' => (string) ($data['context'] ?? ''),
+            ];
+
+            return 1;
+        }
+
+        public function get_results(string $query, string $output = OBJECT): array
+        {
+            $logs = array_values($GLOBALS['sendora_test_logs']);
+            usort($logs, static fn (array $a, array $b): int => $b['id'] <=> $a['id']);
+
+            if (preg_match('/LIMIT\s+(\d+)/i', $query, $matches)) {
+                $logs = array_slice($logs, 0, (int) $matches[1]);
+            }
+
+            if ($output === 'ARRAY_A') {
+                return $logs;
+            }
+
+            return $logs;
+        }
+
+        public function get_var(string $query): int
+        {
+            return count($GLOBALS['sendora_test_logs']);
+        }
+
+        public function query(string $query): int
+        {
+            if (stripos($query, 'TRUNCATE') !== false) {
+                $GLOBALS['sendora_test_logs'] = [];
+                $GLOBALS['sendora_test_log_id'] = 0;
+
+                return 0;
+            }
+
+            if (preg_match('/DELETE FROM .+ LIMIT\s+(\d+)/i', $query, $matches)) {
+                $limit = (int) $matches[1];
+                $ids = array_keys($GLOBALS['sendora_test_logs']);
+                sort($ids);
+                foreach (array_slice($ids, 0, $limit) as $id) {
+                    unset($GLOBALS['sendora_test_logs'][$id]);
+                }
+
+                return $limit;
+            }
+
+            return 0;
+        }
+
+        public function prepare(string $query, mixed ...$args): string
+        {
+            if ($args !== []) {
+                $query = preg_replace('/%d/', (string) $args[0], $query, 1) ?? $query;
+            }
+
+            return $query;
+        }
+    };
+}
+
+if (!defined('ARRAY_A')) {
+    define('ARRAY_A', 'ARRAY_A');
+}
+
+if (!function_exists('current_time')) {
+    function current_time(string $type, bool $gmt = false): string
+    {
+        return gmdate('Y-m-d H:i:s');
+    }
+}
+
+if (!function_exists('sanitize_key')) {
+    function sanitize_key(string $key): string
+    {
+        return strtolower(preg_replace('/[^a-z0-9_\-]/', '', $key) ?? '');
+    }
+}
+
+if (!function_exists('wp_strip_all_tags')) {
+    function wp_strip_all_tags(string $text): string
+    {
+        return strip_tags($text);
+    }
+}
+
 if (!class_exists('WP_Error')) {
     class WP_Error
     {
@@ -147,6 +248,7 @@ if (!class_exists('WP_Error')) {
 
 foreach ([
     dirname(__DIR__) . '/includes/class-sendora-phone.php',
+    dirname(__DIR__) . '/includes/class-sendora-logger.php',
     dirname(__DIR__) . '/includes/class-sendora-api-client.php',
     dirname(__DIR__) . '/includes/class-sendora-settings.php',
 ] as $file) {
