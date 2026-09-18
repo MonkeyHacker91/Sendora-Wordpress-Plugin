@@ -209,6 +209,49 @@ if (!function_exists('esc_url_raw')) {
     }
 }
 
+if (!function_exists('esc_url')) {
+    function esc_url(string $url): string
+    {
+        $url = esc_url_raw($url);
+
+        return is_string($url) ? $url : '';
+    }
+}
+
+if (!function_exists('add_query_arg')) {
+    /**
+     * @param array<string, scalar|null> $args
+     */
+    function add_query_arg(array $args, string $url): string
+    {
+        $parts = parse_url($url);
+        if (!is_array($parts)) {
+            return $url;
+        }
+
+        $query = [];
+        if (!empty($parts['query'])) {
+            parse_str((string) $parts['query'], $query);
+        }
+
+        foreach ($args as $key => $value) {
+            if ($value === null) {
+                unset($query[$key]);
+                continue;
+            }
+
+            $query[$key] = (string) $value;
+        }
+
+        $scheme = $parts['scheme'] ?? 'https';
+        $host = $parts['host'] ?? '';
+        $path = $parts['path'] ?? '';
+        $port = isset($parts['port']) ? ':' . $parts['port'] : '';
+
+        return $scheme . '://' . $host . $port . $path . '?' . http_build_query($query);
+    }
+}
+
 if (!function_exists('add_settings_error')) {
     function add_settings_error(
         string $setting,
@@ -451,6 +494,7 @@ foreach ([
     dirname(__DIR__) . '/includes/class-sendora-api-client.php',
     dirname(__DIR__) . '/includes/class-sendora-settings.php',
     dirname(__DIR__) . '/includes/class-sendora-forms.php',
+    dirname(__DIR__) . '/includes/class-sendora-widget.php',
     dirname(__DIR__) . '/includes/class-sendora-cf7.php',
     dirname(__DIR__) . '/includes/class-sendora-plugin.php',
 ] as $file) {

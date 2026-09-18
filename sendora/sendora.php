@@ -24,6 +24,7 @@ require_once SENDORA_PLUGIN_DIR . 'includes/class-sendora-logger.php';
 require_once SENDORA_PLUGIN_DIR . 'includes/class-sendora-api-client.php';
 require_once SENDORA_PLUGIN_DIR . 'includes/class-sendora-settings.php';
 require_once SENDORA_PLUGIN_DIR . 'includes/class-sendora-forms.php';
+require_once SENDORA_PLUGIN_DIR . 'includes/class-sendora-widget.php';
 if (defined('WPCF7_VERSION')) {
     require_once SENDORA_PLUGIN_DIR . 'includes/class-sendora-cf7.php';
 }

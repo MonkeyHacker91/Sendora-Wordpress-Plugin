@@ -8,7 +8,8 @@ require_once __DIR__ . '/test-settings.php';
 require_once __DIR__ . '/test-logger.php';
 require_once __DIR__ . '/test-forms-mapping.php';
 require_once __DIR__ . '/test-cf7.php';
+require_once __DIR__ . '/test-widget.php';
 
-final class AllTests extends SendoraCf7Test
+final class AllTests extends SendoraWidgetTest
 {
 }
