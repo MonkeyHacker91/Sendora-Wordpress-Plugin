@@ -18,6 +18,7 @@ final class Sendora_Plugin
     public function run(): void
     {
         (new Sendora_Settings())->run();
+        (new Sendora_Forms())->run();
     }
 
     private function __construct()

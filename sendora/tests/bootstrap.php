@@ -10,6 +10,19 @@ $GLOBALS['sendora_test_settings_errors'] = [];
 $GLOBALS['sendora_test_json_response'] = null;
 $GLOBALS['sendora_test_logs'] = [];
 $GLOBALS['sendora_test_log_id'] = 0;
+$GLOBALS['sendora_test_shortcodes'] = [];
+$GLOBALS['sendora_test_enqueued_styles'] = [];
+$GLOBALS['sendora_test_enqueued_scripts'] = [];
+$GLOBALS['sendora_test_transients'] = [];
+$GLOBALS['sendora_test_nonce_valid'] = 1;
+
+if (!defined('SENDORA_VERSION')) {
+    define('SENDORA_VERSION', '0.1.0-test');
+}
+
+if (!defined('SENDORA_PLUGIN_FILE')) {
+    define('SENDORA_PLUGIN_FILE', dirname(__DIR__) . '/sendora.php');
+}
 
 if (!function_exists('get_option')) {
     function get_option(string $option, mixed $default = false): mixed
@@ -73,6 +86,57 @@ if (!function_exists('add_action')) {
     }
 }
 
+if (!function_exists('add_shortcode')) {
+    function add_shortcode(string $tag, callable $callback): void
+    {
+        $GLOBALS['sendora_test_shortcodes'][$tag] = $callback;
+    }
+}
+
+if (!function_exists('wp_enqueue_style')) {
+    function wp_enqueue_style(
+        string $handle,
+        string $src = '',
+        array $deps = [],
+        string|bool|null $version = false
+    ): void {
+        $GLOBALS['sendora_test_enqueued_styles'][$handle] = compact('src', 'deps', 'version');
+    }
+}
+
+if (!function_exists('wp_enqueue_script')) {
+    function wp_enqueue_script(
+        string $handle,
+        string $src = '',
+        array $deps = [],
+        string|bool|null $version = false,
+        bool|array $args = false
+    ): void {
+        $GLOBALS['sendora_test_enqueued_scripts'][$handle] = compact('src', 'deps', 'version', 'args');
+    }
+}
+
+if (!function_exists('plugins_url')) {
+    function plugins_url(string $path = '', string $plugin = ''): string
+    {
+        return 'https://example.test/wp-content/plugins/sendora/' . ltrim($path, '/');
+    }
+}
+
+if (!function_exists('admin_url')) {
+    function admin_url(string $path = ''): string
+    {
+        return 'https://example.test/wp-admin/' . ltrim($path, '/');
+    }
+}
+
+if (!function_exists('wp_create_nonce')) {
+    function wp_create_nonce(string $action): string
+    {
+        return 'nonce-' . $action;
+    }
+}
+
 if (!function_exists('register_setting')) {
     function register_setting(string $group, string $option, array $arguments = []): void
     {
@@ -87,6 +151,48 @@ if (!function_exists('sanitize_text_field')) {
     function sanitize_text_field(string $value): string
     {
         return trim(strip_tags($value));
+    }
+}
+
+if (!function_exists('sanitize_textarea_field')) {
+    function sanitize_textarea_field(string $value): string
+    {
+        return trim(strip_tags($value));
+    }
+}
+
+if (!function_exists('sanitize_email')) {
+    function sanitize_email(string $value): string
+    {
+        return filter_var(trim($value), FILTER_SANITIZE_EMAIL);
+    }
+}
+
+if (!function_exists('wp_unslash')) {
+    function wp_unslash(mixed $value): mixed
+    {
+        return $value;
+    }
+}
+
+if (!function_exists('esc_attr')) {
+    function esc_attr(string $value): string
+    {
+        return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+    }
+}
+
+if (!function_exists('esc_html')) {
+    function esc_html(string $value): string
+    {
+        return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+    }
+}
+
+if (!function_exists('esc_html__')) {
+    function esc_html__(string $text, string $domain = 'default'): string
+    {
+        return esc_html($text);
     }
 }
 
@@ -116,17 +222,36 @@ if (!function_exists('current_user_can')) {
 }
 
 if (!function_exists('check_ajax_referer')) {
-    function check_ajax_referer(string $action, string|false $query_arg = false): int
-    {
-        return 1;
+    function check_ajax_referer(
+        string $action,
+        string|false $query_arg = false,
+        bool $stop = true
+    ): int|false {
+        return $GLOBALS['sendora_test_nonce_valid'];
     }
 }
 
 if (!function_exists('wp_send_json')) {
-    function wp_send_json(mixed $response): never
+    function wp_send_json(mixed $response, ?int $status_code = null, int $flags = 0): never
     {
         $GLOBALS['sendora_test_json_response'] = $response;
         throw new RuntimeException('sendora_test_json_complete');
+    }
+}
+
+if (!function_exists('get_transient')) {
+    function get_transient(string $transient): mixed
+    {
+        return $GLOBALS['sendora_test_transients'][$transient] ?? false;
+    }
+}
+
+if (!function_exists('set_transient')) {
+    function set_transient(string $transient, mixed $value, int $expiration = 0): bool
+    {
+        $GLOBALS['sendora_test_transients'][$transient] = $value;
+
+        return true;
     }
 }
 
@@ -251,6 +376,8 @@ foreach ([
     dirname(__DIR__) . '/includes/class-sendora-logger.php',
     dirname(__DIR__) . '/includes/class-sendora-api-client.php',
     dirname(__DIR__) . '/includes/class-sendora-settings.php',
+    dirname(__DIR__) . '/includes/class-sendora-forms.php',
+    dirname(__DIR__) . '/includes/class-sendora-plugin.php',
 ] as $file) {
     if (is_file($file)) {
         require_once $file;

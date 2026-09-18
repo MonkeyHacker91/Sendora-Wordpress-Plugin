@@ -23,6 +23,7 @@ require_once SENDORA_PLUGIN_DIR . 'includes/class-sendora-phone.php';
 require_once SENDORA_PLUGIN_DIR . 'includes/class-sendora-logger.php';
 require_once SENDORA_PLUGIN_DIR . 'includes/class-sendora-api-client.php';
 require_once SENDORA_PLUGIN_DIR . 'includes/class-sendora-settings.php';
+require_once SENDORA_PLUGIN_DIR . 'includes/class-sendora-forms.php';
 require_once SENDORA_PLUGIN_DIR . 'includes/class-sendora-plugin.php';
 
 register_activation_hook(SENDORA_PLUGIN_FILE, static function (): void {
