@@ -32,6 +32,7 @@ abstract class SendoraSettingsTest extends SendoraApiClientTest
         $this->assertArrayHasKey('admin_menu', $GLOBALS['sendora_test_actions']);
         $this->assertArrayHasKey('wp_ajax_sendora_test_connection', $GLOBALS['sendora_test_actions']);
         $this->assertArrayHasKey('wp_ajax_sendora_disconnect', $GLOBALS['sendora_test_actions']);
+        $this->assertArrayHasKey('wp_ajax_sendora_test_send', $GLOBALS['sendora_test_actions']);
     }
 
     public function test_sanitize_accepts_https_and_sk_key(): void
@@ -148,6 +149,12 @@ abstract class SendoraSettingsTest extends SendoraApiClientTest
                 'name' => 'your-name',
                 'phone' => 'your-phonescript',
                 'email' => 'your_email',
+                'enabled' => false,
+                'channel' => 'evolution',
+                'instance_id' => '',
+                'template_id' => '',
+                'template_language' => 'pt_BR',
+                'body_vars' => [],
             ],
         ], $settings['cf7_mappings']);
     }
@@ -223,5 +230,78 @@ abstract class SendoraSettingsTest extends SendoraApiClientTest
         $this->assertSame('sk_new_partial', $settings['api_key']);
         $this->assertTrue($settings['widget_enabled']);
         $this->assertSame('a1b2c3d4-e5f6-4890-abcd-ef1234567890', $settings['widget_id']);
+    }
+
+    public function test_sanitize_woo_events_partial_save(): void
+    {
+        $settings = Sendora_Settings::sanitize([
+            '_partial' => 'woo',
+            'woo_events' => [
+                'order_created' => [
+                    'enabled' => '1',
+                    'channel' => 'whatsapp',
+                    'template_id' => 'tpl-ok',
+                    'instance_id' => 'Instancia_1',
+                ],
+                'payment_approved' => [
+                    'enabled' => '1',
+                    'channel' => 'sms',
+                    'template_id' => 'bad id!',
+                ],
+            ],
+        ]);
+
+        $this->assertTrue($settings['woo_events']['order_created']['enabled']);
+        $this->assertSame('tpl-ok', $settings['woo_events']['order_created']['template_id']);
+        $this->assertSame('evolution', $settings['woo_events']['order_created']['channel']);
+        $this->assertSame('Instancia_1', $settings['woo_events']['order_created']['instance_id']);
+        $this->assertTrue($settings['woo_events']['payment_approved']['enabled']);
+        $this->assertSame('evolution', $settings['woo_events']['payment_approved']['channel']);
+        $this->assertSame('', $settings['woo_events']['payment_approved']['template_id']);
+        $this->assertFalse($settings['woo_events']['order_cancelled']['enabled']);
+    }
+
+    public function test_sanitize_woo_events_meta_official(): void
+    {
+        $settings = Sendora_Settings::sanitize([
+            '_partial' => 'woo',
+            'woo_events' => [
+                'payment_approved' => [
+                    'enabled' => '1',
+                    'channel' => 'meta',
+                    'instance_id' => 'waba-uuid-1',
+                    'template_id' => 'pedido_pago',
+                    'template_language' => 'pt_BR',
+                    'body_vars' => 'first_name, order_number',
+                ],
+            ],
+        ]);
+
+        $row = $settings['woo_events']['payment_approved'];
+        $this->assertSame('meta', $row['channel']);
+        $this->assertSame('waba-uuid-1', $row['instance_id']);
+        $this->assertSame('pedido_pago', $row['template_id']);
+        $this->assertSame('pt_BR', $row['template_language']);
+        $this->assertSame(['first_name', 'order_number'], $row['body_vars']);
+    }
+
+    public function test_sanitize_woo_events_crm_fields(): void
+    {
+        $settings = Sendora_Settings::sanitize([
+            '_partial' => 'woo',
+            'woo_events' => [
+                'order_created' => [
+                    'enabled' => '1',
+                    'template_id' => 'tpl-1',
+                    'funnel_id' => 'fun-abc',
+                    'stage' => 'novo-lead',
+                    'tags' => 'woo, pedido-criado, woo',
+                ],
+            ],
+        ]);
+
+        $this->assertSame('fun-abc', $settings['woo_events']['order_created']['funnel_id']);
+        $this->assertSame('novo-lead', $settings['woo_events']['order_created']['stage']);
+        $this->assertSame(['woo', 'pedido-criado'], $settings['woo_events']['order_created']['tags']);
     }
 }

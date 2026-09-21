@@ -13,7 +13,7 @@ Official WordPress plugin to connect your site to [Sendora](https://sendora.com.
 - **Lead forms** — Shortcode `[sendora_form]` and Contact Form 7 field mapping
 - **Chat widget** — Official Sendora embed with all pages or specific pages
 - **WooCommerce** — Sync contacts on order created / paid / cancelled (optional flows & messages)
-- **Event bus** — Foundation for automations (flows & templates)
+- **Automações** — Gatilhos Woo/Forms/CF7 com condições e delay no WP; mensagem, CRM e fluxos na Sendora
 - **Local logs** — Diagnostics without storing API secrets
 
 ## Requirements

@@ -6,6 +6,8 @@
 if (!defined('ABSPATH')) {
     exit;
 }
+
+$phone_country = (string) ($settings['phone_country'] ?? 'BR');
 ?>
 <section class="sendora-hero">
     <div>
@@ -21,12 +23,24 @@ if (!defined('ABSPATH')) {
     <input type="hidden" name="sendora_settings[_partial]" value="general">
 
     <section class="sendora-card">
-        <label class="sendora-field" for="sendora-default-cc-general">
-            <span><?php echo esc_html__('DDI padrão', 'sendora'); ?></span>
-            <input class="sendora-input sendora-input--sm" id="sendora-default-cc-general" name="sendora_settings[default_cc]" type="text"
-                value="<?php echo esc_attr((string) $settings['default_cc']); ?>" inputmode="numeric">
+        <label class="sendora-field" for="sendora-phone-country-general">
+            <span><?php echo esc_html__('País do telefone', 'sendora'); ?></span>
+            <select class="sendora-input" id="sendora-phone-country-general" name="sendora_settings[phone_country]">
+                <?php echo Sendora_Phone::country_options_html($phone_country); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped in helper ?>
+            </select>
         </label>
-        <p class="sendora-help"><?php echo esc_html__('Usado ao normalizar telefones de formulários e pedidos.', 'sendora'); ?></p>
+        <p class="sendora-help">
+            <?php echo esc_html__('Define o DDI e a máscara do telefone em formulários, pedidos e testes.', 'sendora'); ?>
+        </p>
+
+        <label class="sendora-field" for="sendora-test-phone">
+            <span><?php echo esc_html__('Telefone para testes', 'sendora'); ?></span>
+            <input class="sendora-input" id="sendora-test-phone" name="sendora_settings[test_phone]" type="text"
+                value="<?php echo esc_attr((string) ($settings['test_phone'] ?? '')); ?>"
+                placeholder="<?php echo esc_attr(Sendora_Phone::country($phone_country)['placeholder']); ?>"
+                inputmode="numeric" autocomplete="tel">
+        </label>
+        <p class="sendora-help"><?php echo esc_html__('Padrão do campo “Enviar teste para” nos cards. Você também pode digitar o número na hora do teste (inclusive o seu).', 'sendora'); ?></p>
     </section>
 
     <div class="sendora-actions">

@@ -475,6 +475,15 @@ if (!function_exists('set_transient')) {
     }
 }
 
+if (!function_exists('delete_transient')) {
+    function delete_transient(string $transient): bool
+    {
+        unset($GLOBALS['sendora_test_transients'][$transient]);
+
+        return true;
+    }
+}
+
 if (!isset($GLOBALS['wpdb'])) {
     $GLOBALS['wpdb'] = new class {
         public string $prefix = 'wp_';
@@ -581,10 +590,50 @@ if (!function_exists('current_time')) {
     }
 }
 
+if (!function_exists('wp_date')) {
+    function wp_date(string $format, ?int $timestamp = null): string
+    {
+        return date($format, $timestamp ?? time());
+    }
+}
+
+if (!function_exists('get_bloginfo')) {
+    function get_bloginfo(string $show = ''): string
+    {
+        return $show === 'name' ? 'Sendora Test Store' : '';
+    }
+}
+
+if (!function_exists('home_url')) {
+    function home_url(string $path = ''): string
+    {
+        return 'https://example.com' . $path;
+    }
+}
+
+if (!function_exists('wp_clear_scheduled_hook')) {
+    function wp_clear_scheduled_hook(string $hook, array $args = []): void
+    {
+        $GLOBALS['sendora_test_scheduled_events'] = array_values(array_filter(
+            $GLOBALS['sendora_test_scheduled_events'] ?? [],
+            static function (array $event) use ($hook, $args): bool {
+                return !($event['hook'] === $hook && ($args === [] || ($event['args'] ?? []) === $args));
+            }
+        ));
+    }
+}
+
 if (!function_exists('wc_get_order')) {
     function wc_get_order(int $order_id): mixed
     {
         return $GLOBALS['sendora_test_wc_orders'][$order_id] ?? false;
+    }
+}
+
+if (!function_exists('wc_get_orders')) {
+    function wc_get_orders(array $args = []): array
+    {
+        return $GLOBALS['sendora_test_wc_order_list'] ?? [];
     }
 }
 
@@ -703,6 +752,8 @@ foreach ([
     dirname(__DIR__) . '/includes/class-sendora-phone.php',
     dirname(__DIR__) . '/includes/class-sendora-logger.php',
     dirname(__DIR__) . '/includes/class-sendora-api-client.php',
+    dirname(__DIR__) . '/includes/class-sendora-template-vars.php',
+    dirname(__DIR__) . '/includes/class-sendora-outbound.php',
     dirname(__DIR__) . '/includes/class-sendora-settings.php',
     dirname(__DIR__) . '/includes/class-sendora-connection.php',
     dirname(__DIR__) . '/includes/Events/class-sendora-events.php',
@@ -711,6 +762,9 @@ foreach ([
     dirname(__DIR__) . '/includes/class-sendora-widget.php',
     dirname(__DIR__) . '/includes/class-sendora-cf7.php',
     dirname(__DIR__) . '/includes/class-sendora-woocommerce.php',
+    dirname(__DIR__) . '/includes/class-sendora-abandoned-cart.php',
+    dirname(__DIR__) . '/includes/class-sendora-automations.php',
+    dirname(__DIR__) . '/includes/class-sendora-onboarding.php',
     dirname(__DIR__) . '/includes/class-sendora-plugin.php',
 ] as $file) {
     if (is_file($file)) {

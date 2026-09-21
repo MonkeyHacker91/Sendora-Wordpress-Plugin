@@ -177,6 +177,86 @@ final class Sendora_Api_Client
     }
 
     /**
+     * Send an approved Meta WABA template (POST /api/messages/send-template).
+     *
+     * @param array<string, mixed> $payload
+     * @return array{ok: bool, status: int, data: mixed, error: ?string}
+     */
+    public function send_template(array $payload): array
+    {
+        return $this->request('POST', '/api/messages/send-template', $payload);
+    }
+
+    /**
+     * List message templates from the Sendora account (GET /api/templates).
+     *
+     * @return array{ok: bool, status: int, data: mixed, error: ?string}
+     */
+    public function list_templates(): array
+    {
+        return $this->request('GET', '/api/templates');
+    }
+
+    /**
+     * WhatsApp QR Code instances (GET /api/connections).
+     *
+     * @return array{ok: bool, status: int, data: mixed, error: ?string}
+     */
+    public function list_connections(): array
+    {
+        return $this->request('GET', '/api/connections');
+    }
+
+    /**
+     * Official Meta WABA accounts (GET /api/meta/waba).
+     *
+     * @return array{ok: bool, status: int, data: mixed, error: ?string}
+     */
+    public function list_waba(): array
+    {
+        return $this->request('GET', '/api/meta/waba');
+    }
+
+    /**
+     * Official Meta message templates (GET /api/meta/templates).
+     *
+     * @return array{ok: bool, status: int, data: mixed, error: ?string}
+     */
+    public function list_meta_templates(?string $api_settings_id = null): array
+    {
+        $api_settings_id = $api_settings_id !== null ? sanitize_text_field($api_settings_id) : '';
+        if ($api_settings_id !== '' && preg_match('/^[A-Za-z0-9_-]+$/', $api_settings_id)) {
+            return $this->request(
+                'GET',
+                '/api/meta/templates?api_settings_id=' . rawurlencode($api_settings_id)
+            );
+        }
+
+        return $this->request('GET', '/api/meta/templates');
+    }
+
+    /**
+     * @return array{ok: bool, status: int, data: mixed, error: ?string}
+     */
+    public function list_funnels(): array
+    {
+        return $this->request('GET', '/api/funnels');
+    }
+
+    /**
+     * @return array{ok: bool, status: int, data: mixed, error: ?string}
+     */
+    public function list_stages(?string $funnel_id = null): array
+    {
+        $funnel_id = $funnel_id !== null ? sanitize_text_field($funnel_id) : '';
+        if ($funnel_id !== '' && preg_match('/^[A-Za-z0-9_-]+$/', $funnel_id)) {
+            return $this->request('GET', '/api/funnels/' . rawurlencode($funnel_id) . '/stages');
+        }
+
+        return $this->request('GET', '/api/stages');
+    }
+
+    /**
      * @return array{ok: bool, message: string}
      */
     public function test_connection(): array
@@ -228,7 +308,7 @@ final class Sendora_Api_Client
             return false;
         }
 
-        return (bool) preg_match('#^/api/[A-Za-z0-9/_-]+$#', $path);
+        return (bool) preg_match('#^/api/[A-Za-z0-9/_-]+(?:\?[A-Za-z0-9_=&%-]+)?$#', $path);
     }
 
     private function decode_body(string $body): mixed

@@ -15,6 +15,9 @@ if (!defined('ABSPATH')) {
 $connected = !empty($status['connected']);
 $error_logs = array_values(array_filter($logs, static fn ($row) => ($row['level'] ?? '') === 'error'));
 $last_event = $logs[0] ?? null;
+$onboard_steps = class_exists('Sendora_Onboarding') ? Sendora_Onboarding::steps($settings) : [];
+$show_checklist = class_exists('Sendora_Onboarding')
+    && Sendora_Onboarding::show_checklist($settings);
 ?>
 <section class="sendora-hero">
     <div>
@@ -32,6 +35,12 @@ $last_event = $logs[0] ?? null;
 </section>
 
 <p id="sendora-connection-result" class="sendora-inline-status" role="status" aria-live="polite"></p>
+
+<?php
+if ($show_checklist) {
+    require SENDORA_PLUGIN_DIR . 'admin/views/partials/onboarding-checklist.php';
+}
+?>
 
 <div class="sendora-grid sendora-grid--stats">
     <article class="sendora-card sendora-stat">

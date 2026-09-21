@@ -1,0 +1,18 @@
+/* Always loaded in wp-admin — keep Sendora menu icon at Dashicons size */
+#adminmenu .toplevel_page_sendora .wp-menu-image img,
+#adminmenu .toplevel_page_sendora.wp-has-current-submenu .wp-menu-image img,
+#adminmenu .toplevel_page_sendora.current .wp-menu-image img {
+  padding: 7px 0 0 !important;
+  margin: 0 auto !important;
+  opacity: 1 !important;
+  width: 20px !important;
+  height: 20px !important;
+  max-width: 20px !important;
+  max-height: 20px !important;
+  object-fit: contain;
+}
+
+#adminmenu .toplevel_page_sendora .wp-menu-image {
+  width: 36px;
+  height: 34px;
+}

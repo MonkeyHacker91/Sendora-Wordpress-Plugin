@@ -92,6 +92,40 @@ abstract class SendoraApiClientTest extends SendoraPhoneTest
         $this->assertTrue($result['ok']);
     }
 
+    public function test_send_template_posts_meta_payload(): void
+    {
+        $payload = [
+            'phone' => '5511999999999',
+            'template_name' => 'pedido_pago',
+            'language' => 'pt_BR',
+            'api_settings_id' => 'waba-1',
+        ];
+        $GLOBALS['sendora_test_http_handler'] = function (string $url, array $arguments) use ($payload): array {
+            $this->assertSame('https://api.sendora.com.br/api/messages/send-template', $url);
+            $this->assertSame($payload, json_decode($arguments['body'], true));
+
+            return $this->response(200, ['ok' => true]);
+        };
+
+        $result = Sendora_Api_Client::from_options()->send_template($payload);
+        $this->assertTrue($result['ok']);
+    }
+
+    public function test_list_meta_templates_allows_query_string(): void
+    {
+        $GLOBALS['sendora_test_http_handler'] = function (string $url): array {
+            $this->assertSame(
+                'https://api.sendora.com.br/api/meta/templates?api_settings_id=waba-1',
+                $url
+            );
+
+            return $this->response(200, ['ok' => true, 'data' => []]);
+        };
+
+        $result = Sendora_Api_Client::from_options()->list_meta_templates('waba-1');
+        $this->assertTrue($result['ok']);
+    }
+
     public function test_request_maps_non_2xx_response_to_error(): void
     {
         $this->assertTrue(class_exists('Sendora_Api_Client'), 'Sendora_Api_Client must exist.');

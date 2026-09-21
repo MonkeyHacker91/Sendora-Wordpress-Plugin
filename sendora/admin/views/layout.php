@@ -26,11 +26,12 @@ $status = class_exists('Sendora_Connection') ? Sendora_Connection::get_status() 
 <div class="sendora-app wrap">
     <header class="sendora-topbar">
         <div class="sendora-topbar__brand">
-            <span class="sendora-topbar__mark" aria-hidden="true">S</span>
-            <div>
-                <strong class="sendora-topbar__name"><?php echo esc_html__('Sendora', 'sendora'); ?></strong>
-                <span class="sendora-topbar__tag"><?php echo esc_html__('WordPress', 'sendora'); ?></span>
-            </div>
+            <img class="sendora-topbar__logo"
+                src="<?php echo esc_url(plugins_url('admin/assets/logo-sendora.svg', SENDORA_PLUGIN_FILE)); ?>"
+                alt="<?php echo esc_attr__('Sendora', 'sendora'); ?>"
+                width="140"
+                height="29">
+            <span class="sendora-topbar__tag"><?php echo esc_html__('WordPress', 'sendora'); ?></span>
         </div>
         <div class="sendora-topbar__status">
             <?php if (!empty($status['connected'])) : ?>
@@ -55,6 +56,23 @@ $status = class_exists('Sendora_Connection') ? Sendora_Connection::get_status() 
         <?php
         if (!empty($page_file) && is_readable($page_file)) {
             require $page_file;
+        }
+
+        if (
+            class_exists('Sendora_Onboarding')
+            && current_user_can('manage_options')
+            && Sendora_Onboarding::is_wizard_due()
+        ) {
+            $ob_settings = Sendora_Settings::get_settings();
+            $onboarding = Sendora_Onboarding::state($ob_settings);
+            $forced_step = Sendora_Onboarding::request_wizard_step();
+            if ($forced_step !== null) {
+                $onboarding['wizard_step'] = $forced_step;
+            }
+            $qr_count = count(Sendora_Settings::load_templates_public($ob_settings));
+            $meta_count = count(Sendora_Settings::load_meta_templates_public($ob_settings));
+            $settings = $ob_settings;
+            require SENDORA_PLUGIN_DIR . 'admin/views/partials/onboarding-wizard.php';
         }
         ?>
     </main>

@@ -1,4 +1,14 @@
-/* Sendora admin — Fluent Forms–inspired SaaS shell */
+/* Sendora admin — brand green (#00cd75) + logo */
+:root {
+  --sendora-green: #00cd75;
+  --sendora-green-dark: #00b368;
+  --sendora-green-soft: #e8faf1;
+  --sendora-ink: #002423;
+  --sendora-muted: #6b7280;
+  --sendora-border: #e5e7eb;
+  --sendora-surface: #fff;
+}
+
 .sendora-app {
   margin: 20px 20px 40px 0;
   max-width: 1100px;
@@ -16,9 +26,9 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 16px 20px;
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  padding: 14px 20px;
+  background: var(--sendora-surface);
+  border: 1px solid var(--sendora-border);
   border-radius: 12px 12px 0 0;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
@@ -29,27 +39,20 @@
   gap: 12px;
 }
 
-.sendora-topbar__mark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #2563eb, #1d4ed8);
-  color: #fff;
-  font-weight: 700;
-}
-
-.sendora-topbar__name {
+.sendora-topbar__logo {
   display: block;
-  font-size: 16px;
-  line-height: 1.2;
+  height: 28px;
+  width: auto;
+  max-width: 160px;
 }
 
 .sendora-topbar__tag {
-  color: #6b7280;
+  color: var(--sendora-muted);
   font-size: 12px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #f3f4f6;
 }
 
 .sendora-topbar__status {
@@ -68,8 +71,8 @@
   flex-wrap: wrap;
   gap: 4px;
   padding: 10px 12px;
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: var(--sendora-surface);
+  border: 1px solid var(--sendora-border);
   border-top: 0;
   border-radius: 0 0 12px 12px;
   margin-bottom: 20px;
@@ -87,13 +90,14 @@
 }
 
 .sendora-nav__link:hover {
-  background: #f3f4f6;
-  color: #111827;
+  background: var(--sendora-green-soft);
+  color: var(--sendora-ink);
 }
 
 .sendora-nav__link.is-active {
-  background: #eff6ff;
-  color: #1d4ed8;
+  background: var(--sendora-green-soft);
+  color: var(--sendora-ink);
+  box-shadow: inset 0 -2px 0 var(--sendora-green);
 }
 
 .sendora-main {
@@ -113,12 +117,12 @@
   margin: 0 0 4px;
   font-size: 24px;
   font-weight: 650;
-  color: #111827;
+  color: var(--sendora-ink);
 }
 
 .sendora-hero p {
   margin: 0;
-  color: #6b7280;
+  color: var(--sendora-muted);
 }
 
 .sendora-hero__actions {
@@ -128,8 +132,8 @@
 }
 
 .sendora-card {
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: var(--sendora-surface);
+  border: 1px solid var(--sendora-border);
   border-radius: 12px;
   padding: 20px 22px;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
@@ -161,7 +165,7 @@
 
 .sendora-stat__label {
   display: block;
-  color: #6b7280;
+  color: var(--sendora-muted);
   font-size: 12px;
   margin-bottom: 6px;
 }
@@ -170,7 +174,7 @@
   display: block;
   font-size: 18px;
   line-height: 1.3;
-  color: #111827;
+  color: var(--sendora-ink);
 }
 
 .sendora-stat__meta {
@@ -191,7 +195,7 @@
 }
 
 .sendora-badge--ok {
-  background: #ecfdf5;
+  background: var(--sendora-green-soft);
   color: #047857;
 }
 
@@ -212,12 +216,12 @@
 }
 
 .sendora-btn--primary {
-  background: #2563eb;
+  background: var(--sendora-green);
   color: #fff;
 }
 
 .sendora-btn--primary:hover {
-  background: #1d4ed8;
+  background: var(--sendora-green-dark);
 }
 
 .sendora-btn--ghost {
@@ -235,6 +239,54 @@
 .sendora-btn:disabled {
   opacity: 0.6;
   cursor: wait;
+}
+
+/* <a class="sendora-btn"> — kill wp-admin blue link hover/underline */
+a.sendora-btn,
+a.sendora-btn:hover,
+a.sendora-btn:focus,
+a.sendora-btn:active,
+a.sendora-btn:visited {
+  text-decoration: none !important;
+  box-shadow: none;
+  outline: none;
+}
+
+a.sendora-btn--primary,
+a.sendora-btn--primary:hover,
+a.sendora-btn--primary:focus,
+a.sendora-btn--primary:visited {
+  color: #fff !important;
+  background: var(--sendora-green);
+}
+
+a.sendora-btn--primary:hover,
+a.sendora-btn--primary:focus {
+  background: var(--sendora-green-dark);
+}
+
+a.sendora-btn--ghost,
+a.sendora-btn--ghost:hover,
+a.sendora-btn--ghost:focus,
+a.sendora-btn--ghost:visited {
+  color: #374151 !important;
+  background: #fff;
+}
+
+a.sendora-btn--ghost:hover,
+a.sendora-btn--ghost:focus {
+  border-color: #9ca3af;
+  background: #f9fafb;
+}
+
+.sendora-onboard a:not(.sendora-btn) {
+  color: var(--sendora-ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.sendora-onboard a:not(.sendora-btn):hover {
+  color: var(--sendora-green-dark);
 }
 
 .sendora-field {
@@ -259,13 +311,19 @@
   background: #fff;
 }
 
+.sendora-input:focus {
+  border-color: var(--sendora-green);
+  outline: 2px solid rgba(0, 205, 117, 0.25);
+  outline-offset: 0;
+}
+
 .sendora-input--sm {
   max-width: 120px;
 }
 
 .sendora-help {
   margin: 0 0 8px;
-  color: #6b7280;
+  color: var(--sendora-muted);
   font-size: 12px;
 }
 
@@ -285,6 +343,24 @@
   align-items: center;
   gap: 10px;
   margin-top: 8px;
+}
+
+.sendora-test-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px;
+  width: 100%;
+}
+
+.sendora-test-row__phone {
+  flex: 1 1 180px;
+  min-width: 160px;
+  margin: 0;
+}
+
+.sendora-test-row .sendora-btn {
+  margin-bottom: 2px;
 }
 
 .sendora-inline-status {
@@ -335,7 +411,7 @@
 }
 
 .sendora-meta dt {
-  color: #6b7280;
+  color: var(--sendora-muted);
   min-width: 120px;
 }
 
@@ -385,17 +461,17 @@
 }
 
 .sendora-table th {
-  color: #6b7280;
+  color: var(--sendora-muted);
   font-weight: 600;
 }
 
 .sendora-empty {
-  color: #6b7280;
+  color: var(--sendora-muted);
   margin: 0;
 }
 
 .sendora-card--coming {
-  background: linear-gradient(180deg, #fff, #f8fafc);
+  background: linear-gradient(180deg, #fff, #f6fdf9);
 }
 
 .sendora-notice {
@@ -405,7 +481,7 @@
 }
 
 .sendora-notice--ok {
-  background: #ecfdf5;
+  background: var(--sendora-green-soft);
   color: #047857;
 }
 
@@ -426,6 +502,343 @@
 .sendora-widget-pages {
   margin-top: 12px;
 }
+
+.sendora-eyebrow {
+  margin: 0 0 6px;
+  color: var(--sendora-muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.sendora-section-title {
+  margin: 8px 0 4px;
+  font-size: 15px;
+  font-weight: 650;
+  color: var(--sendora-ink);
+}
+
+.sendora-woo-events {
+  display: grid;
+  gap: 12px;
+}
+
+.sendora-woo-card {
+  background: var(--sendora-surface);
+  border: 1px solid var(--sendora-border);
+  border-radius: 14px;
+  padding: 16px 18px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.sendora-woo-card.is-enabled {
+  border-color: rgba(0, 205, 117, 0.45);
+  box-shadow: 0 0 0 3px rgba(0, 205, 117, 0.08);
+}
+
+.sendora-woo-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.sendora-woo-card__title {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.sendora-woo-card__icon {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: var(--sendora-green-soft);
+  font-size: 18px;
+}
+
+.sendora-woo-card__title h3 {
+  margin: 0 0 4px;
+  font-size: 15px;
+  font-weight: 650;
+  color: var(--sendora-ink);
+}
+
+.sendora-woo-card__title p {
+  margin: 0;
+  color: var(--sendora-muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.sendora-woo-card__body {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid #f3f4f6;
+}
+
+.sendora-woo-card__body .sendora-field {
+  margin: 0 0 12px;
+}
+
+.sendora-woo-card__body .sendora-input {
+  max-width: 100%;
+}
+
+.sendora-woo-card__recipient {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--sendora-muted);
+}
+
+.sendora-woo-card__recipient strong {
+  color: var(--sendora-ink);
+  font-weight: 600;
+}
+
+.sendora-woo-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+  flex: 0 0 auto;
+}
+
+.sendora-woo-switch input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.sendora-woo-switch__ui {
+  width: 40px;
+  height: 22px;
+  border-radius: 999px;
+  background: #d1d5db;
+  position: relative;
+  transition: background 0.15s ease;
+}
+
+.sendora-woo-switch__ui::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  transition: transform 0.15s ease;
+}
+
+.sendora-woo-switch input:checked + .sendora-woo-switch__ui {
+  background: var(--sendora-green);
+}
+
+.sendora-woo-switch input:checked + .sendora-woo-switch__ui::after {
+  transform: translateX(18px);
+}
+
+.sendora-woo-switch__label {
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--sendora-muted);
+  min-width: 72px;
+}
+
+.sendora-woo-card.is-enabled .sendora-woo-switch__label {
+  color: #047857;
+}
+
+/* Onboarding wizard + checklist (plugin admin only) */
+body.sendora-onboard-open {
+  overflow: hidden;
+}
+
+.sendora-onboard {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.sendora-onboard__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.sendora-onboard__panel {
+  position: relative;
+  z-index: 1;
+  width: min(640px, 100%);
+  max-height: min(90vh, 720px);
+  overflow: auto;
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid var(--sendora-border);
+  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.18);
+  padding: 24px 28px;
+}
+
+.sendora-onboard__sub {
+  color: var(--sendora-muted);
+  margin: 0 0 16px;
+}
+
+.sendora-onboard__dots {
+  display: flex;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.sendora-onboard__dots li {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  background: #f3f4f6;
+  color: var(--sendora-muted);
+}
+
+.sendora-onboard__dots li.is-active {
+  background: var(--sendora-green);
+  color: #fff;
+}
+
+.sendora-onboard__dots li.is-done {
+  background: var(--sendora-green-soft);
+  color: #047857;
+}
+
+.sendora-onboard__body {
+  margin: 20px 0;
+}
+
+.sendora-onboard__compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 12px 0 16px;
+}
+
+.sendora-onboard__card {
+  border: 1px solid var(--sendora-border);
+  border-radius: 12px;
+  padding: 14px;
+  background: #fafafa;
+}
+
+.sendora-onboard__card h4 {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+
+.sendora-onboard__actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.sendora-onboard__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid var(--sendora-border);
+  padding-top: 16px;
+}
+
+.sendora-onboard__nav {
+  display: flex;
+  gap: 8px;
+}
+
+.sendora-onboard-check__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.sendora-onboard-check__list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--sendora-border);
+}
+
+.sendora-onboard-check__list li:last-child {
+  border-bottom: 0;
+}
+
+.sendora-onboard-check__list li.is-done .sendora-onboard-check__label {
+  color: #047857;
+}
+
+.sendora-onboard-check__mark {
+  font-weight: 700;
+  width: 20px;
+  text-align: center;
+}
+
+.sendora-onboard-check__label {
+  flex: 1;
+}
+
+.sendora-onboard-check__cta {
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--sendora-green-dark);
+}
+
+.sendora-onboard-check__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sendora-btn--sm {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+@media (max-width: 640px) {
+  .sendora-onboard__compare {
+    grid-template-columns: 1fr;
+  }
+
+  .sendora-onboard__foot {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+/* Menu icon sizing lives in admin-menu.css (loaded on all admin screens). */
 
 @media (max-width: 782px) {
   .sendora-app {

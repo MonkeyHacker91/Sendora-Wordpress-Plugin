@@ -104,6 +104,55 @@ final class Sendora_CF7
             return;
         }
 
+        if (class_exists('Sendora_Automations')) {
+            Sendora_Automations::dispatch('form.cf7', [
+                'contact' => $fields,
+                'phone' => $phone,
+                'name' => (string) ($fields['name'] ?? ''),
+                'cf7_form_id' => (string) $form->id(),
+                'vars' => [
+                    'name' => (string) ($fields['name'] ?? ''),
+                    'phone' => $phone,
+                ],
+            ]);
+        }
+
+        $template_id = trim((string) ($mapping['template_id'] ?? ''));
+        $message_enabled = !empty($mapping['enabled']) && $template_id !== '';
+
+        if ($message_enabled) {
+            $send = Sendora_Outbound::upsert_and_send_template(
+                $fields,
+                $template_id,
+                [
+                    'name' => (string) ($fields['name'] ?? ''),
+                    'phone' => $phone,
+                ],
+                [
+                    'provider' => (string) ($mapping['channel'] ?? Sendora_Outbound::PROVIDER_EVOLUTION),
+                    'instance_id' => (string) ($mapping['instance_id'] ?? ''),
+                    'template_language' => (string) ($mapping['template_language'] ?? 'pt_BR'),
+                    'body_vars' => $mapping['body_vars'] ?? [],
+                    'skip_upsert' => true,
+                ]
+            );
+            if (empty($send['ok'])) {
+                self::log_failure((string) ($send['error'] ?? 'CF7 template send failed.'), (int) ($send['status'] ?? 0));
+
+                return;
+            }
+
+            Sendora_Logger::log('cf7', 'info', sprintf(
+                'CF7 → Mensagem: "%s" → Sendora: enviado',
+                (string) ($send['template_name'] ?? '')
+            ), [
+                'form_id' => (string) $form->id(),
+                'template_id' => $template_id,
+            ]);
+
+            return;
+        }
+
         $flow_id = trim((string) ($settings['default_flow_id'] ?? ''));
         if ($flow_id !== '') {
             $flow_result = $client->trigger_flow($flow_id, $phone);

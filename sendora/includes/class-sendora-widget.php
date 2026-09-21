@@ -68,7 +68,7 @@ final class Sendora_Widget
             'sendora-widget',
             $script_url,
             [],
-            null,
+            SENDORA_VERSION,
             true
         );
     }

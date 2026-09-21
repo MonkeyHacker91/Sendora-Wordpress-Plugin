@@ -10,7 +10,9 @@ require_once __DIR__ . '/test-forms-mapping.php';
 require_once __DIR__ . '/test-cf7.php';
 require_once __DIR__ . '/test-widget.php';
 require_once __DIR__ . '/test-woo-payload.php';
+require_once __DIR__ . '/test-automations.php';
+require_once __DIR__ . '/test-onboarding.php';
 
-final class AllTests extends SendoraWooPayloadTest
+final class AllTests extends SendoraOnboardingTest
 {
 }

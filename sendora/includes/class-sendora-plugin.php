@@ -29,6 +29,7 @@ final class Sendora_Plugin
         (new Sendora_Settings())->run();
         (new Sendora_Admin())->run();
         Sendora_Events::register_hooks();
+        Sendora_Automations::register_hooks();
         (new Sendora_Forms())->run();
         (new Sendora_Widget())->run();
         if ((defined('WPCF7_VERSION') || class_exists('WPCF7_ContactForm')) && class_exists('Sendora_CF7')) {
@@ -39,6 +40,12 @@ final class Sendora_Plugin
             && class_exists('Sendora_WooCommerce')
         ) {
             (new Sendora_WooCommerce())->run();
+        }
+        if (
+            (defined('WC_VERSION') || class_exists('WooCommerce'))
+            && class_exists('Sendora_Abandoned_Cart')
+        ) {
+            (new Sendora_Abandoned_Cart())->run();
         }
     }
 

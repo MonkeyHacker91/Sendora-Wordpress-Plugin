@@ -82,6 +82,11 @@ abstract class SendoraFormsMappingTest extends SendoraLoggerTest
     public function test_submit_upserts_contact_and_triggers_default_flow(): void
     {
         $GLOBALS['sendora_test_options']['sendora_settings']['default_flow_id'] = 'flow-1';
+        $GLOBALS['sendora_test_options']['sendora_settings']['native_form'] = [
+            'enabled' => false,
+            'channel' => 'evolution',
+            'template_id' => '',
+        ];
         $requests = [];
         $GLOBALS['sendora_test_http_handler'] = function (string $url, array $arguments) use (&$requests): array {
             $requests[] = [$url, json_decode((string) ($arguments['body'] ?? ''), true)];
@@ -112,6 +117,47 @@ abstract class SendoraFormsMappingTest extends SendoraLoggerTest
             ],
         ], $requests);
         $this->assertSame('form', Sendora_Logger::list(1)[0]['source']);
+    }
+
+    public function test_submit_sends_configured_template_message(): void
+    {
+        $GLOBALS['sendora_test_options']['sendora_settings']['native_form'] = [
+            'enabled' => true,
+            'channel' => 'evolution',
+            'template_id' => 'tpl-form',
+        ];
+        $GLOBALS['sendora_test_options']['sendora_settings']['default_flow_id'] = 'flow-1';
+        delete_transient('sendora_templates_cache');
+
+        $requests = [];
+        $GLOBALS['sendora_test_http_handler'] = function (string $url, array $arguments) use (&$requests): array {
+            $requests[] = $url;
+            if (str_contains($url, '/api/templates')) {
+                return [
+                    'response' => ['code' => 200],
+                    'body' => wp_json_encode([
+                        'data' => [[
+                            'id' => 'tpl-form',
+                            'name' => 'Lead',
+                            'content' => 'Oi {{nome}}',
+                            'type' => 'text',
+                        ]],
+                    ]),
+                ];
+            }
+
+            return ['response' => ['code' => 200], 'body' => '{}'];
+        };
+
+        $result = Sendora_Forms::handle_submission([
+            'name' => 'Ada',
+            'phone' => '11999999999',
+            'website' => '',
+        ], '203.0.113.10');
+
+        $this->assertTrue($result['ok']);
+        $this->assertContains('https://api.sendora.com.br/api/messages/send', $requests);
+        $this->assertNotContains('https://api.sendora.com.br/api/flows/flow-1/trigger', $requests);
     }
 
     public function test_honeypot_submission_does_not_call_api(): void
