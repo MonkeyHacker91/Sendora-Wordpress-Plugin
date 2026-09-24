@@ -3,7 +3,7 @@
  * Plugin Name:       Sendora
  * Plugin URI:        https://app.sendora.com.br
  * Description:       Connect WordPress forms, WooCommerce, and messaging to the Sendora platform.
- * Version:           0.8.6
+ * Version:           0.8.7
  * Requires at least: 6.2
  * Requires PHP:      8.0
  * Author:            Sendora
@@ -22,7 +22,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('SENDORA_VERSION', '0.8.6');
+define('SENDORA_VERSION', '0.8.7');
 define('SENDORA_PLUGIN_FILE', __FILE__);
 define('SENDORA_PLUGIN_DIR', plugin_dir_path(__FILE__));
 

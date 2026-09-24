@@ -4,7 +4,7 @@ Tags: crm, messaging, woocommerce, contact-form-7, marketing-automation
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 0.8.6
+Stable tag: 0.8.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -30,12 +30,22 @@ After you paste a server-side API key (`sk_…`), this plugin sends contact and 
 * **Automations** — Rules in WordPress (trigger, conditions, delay) that run Sendora actions (message, CRM, flow).
 * **Local logs** — Admin log table with API keys redacted.
 
-= External service =
+== External services ==
 
-This plugin depends on the **Sendora** SaaS API:
+This plugin connects to the **Sendora** SaaS platform. It is required for the plugin to work after an administrator saves an API key and enables features.
 
-* API base: `https://api.sendora.com.br`
-* App: `https://app.sendora.com.br`
+* **Service:** Sendora CRM, messaging, and automations
+* **API:** https://api.sendora.com.br
+* **App:** https://app.sendora.com.br
+* **Terms of Service:** https://sendora.com.br/termos-de-uso/
+* **Privacy Policy:** https://sendora.com.br/politica-de-privacidade/
+
+**What data is sent and when**
+
+* After an admin saves an API key (`sk_…`): connection test may call `/api/me` (account/workspace metadata).
+* When forms, Contact Form 7, WooCommerce events, or automations run: contact fields (name, phone, email, tags), optional funnel/stage, order metadata, and message/template payloads over HTTPS.
+* When the chat widget is enabled: the official embed script is loaded from `https://api.sendora.com.br/public/widget/embed` (visitor browser → Sendora).
+* No analytics or telemetry on install. Installing alone does not phone home.
 
 You need a Sendora account and an API key. Message delivery and CRM features are provided by that service (Guideline 6 — genuine SaaS integration).
 
@@ -113,6 +123,9 @@ Digits are normalized with your configured default country calling code (Brazil 
 5. Automations — trigger, conditions, delay, and Sendora actions.
 
 == Changelog ==
+
+= 0.8.7 =
+* Readme: External services section with Terms of Service and Privacy Policy links.
 
 = 0.8.6 =
 * Plugin Check: nonce no deep-link do wizard, wp_unslash em AJAX admin, version no enqueue do widget.
@@ -199,4 +212,7 @@ This plugin sends data to the Sendora API (`https://api.sendora.com.br`) only af
 * **Chat widget** — Off by default. When enabled, loads the official embed from the Sendora API host.
 * **Logs** — Local table `{prefix}sendora_logs`. Secrets are redacted. Removed on uninstall together with settings.
 
-No advertising trackers are bundled. See also [Sendora](https://sendora.com.br) terms and privacy policy for the SaaS account.
+No advertising trackers are bundled. Full SaaS terms and privacy:
+
+* Terms of Service: https://sendora.com.br/termos-de-uso/
+* Privacy Policy: https://sendora.com.br/politica-de-privacidade/
